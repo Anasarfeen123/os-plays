@@ -1,0 +1,46 @@
+{
+    "version": 1,
+    "name": "WristMenuInputActions",
+    "maps": [
+        {
+            "name": "WristMenu",
+            "id": "13902fea-e419-44cb-b53e-ea4df29c83b1",
+            "actions": [
+                {
+                    "name": "ToggleMenu",
+                    "type": "Button",
+                    "id": "e415be39-a711-4f8c-8bc2-5b17ba8f16e9",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "05777975-8be8-47e6-be2d-4e96ab4bb954",
+                    "path": "<QuestTouchPlusController>{LeftHand}/primaryButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleMenu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f47258f8-f94e-474c-910e-14a9b9079a73",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleMenu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

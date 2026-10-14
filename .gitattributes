@@ -1,0 +1,42 @@
+# Line endings: normalise text, keep Unity YAML in LF.
+* text=auto
+
+*.cs        text diff=csharp
+*.shader    text
+*.hlsl      text
+*.json      text
+*.md        text
+*.py        text eol=lf
+
+# Unity YAML: merge with UnityYAMLMerge (see CONTRIBUTING.md to enable it).
+*.unity      text eol=lf merge=unityyamlmerge
+*.prefab     text eol=lf merge=unityyamlmerge
+*.asset      text eol=lf merge=unityyamlmerge
+*.mat        text eol=lf merge=unityyamlmerge
+*.anim       text eol=lf merge=unityyamlmerge
+*.controller text eol=lf merge=unityyamlmerge
+*.mixer      text eol=lf merge=unityyamlmerge
+*.meta       text eol=lf
+
+# Generated scenes: rebuilt by the generator, so on a conflict take either side and rebuild.
+Assets/Scenes/Gridlock*.unity -diff linguist-generated
+
+# Binary assets
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.psd  binary
+*.tga  binary
+*.exr  binary
+*.fbx  binary
+*.FBX  binary
+*.obj  binary
+*.glb  binary
+*.gltf binary
+*.wav  binary
+*.ogg  binary
+*.mp3  binary
+*.ttf  binary
+*.otf  binary
+*.dll  binary
+*.so   binary

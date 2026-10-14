@@ -1,0 +1,111 @@
+{
+    "voice": "en_US-ljspeech-high (Piper, LJ Speech dataset, public domain)",
+    "lines": [
+        {
+            "id": "welcome",
+            "title": "Welcome to the lot",
+            "text": "Welcome to the parking lot. In the next two minutes, you will see how programs in a computer can get completely stuck, and how the system sets them free."
+        },
+        {
+            "id": "environment",
+            "title": "Cars and bays",
+            "text": "Think of this lot as a computer. Each car is a process, a program that wants to run. Each parking bay is a resource, like a printer or a file. A bay holds only one car at a time."
+        },
+        {
+            "id": "allocate",
+            "title": "Allocation",
+            "text": "Watch the cars ask for bays. The bays are free, so the system hands them out. Giving a process the resource it asks for is called allocation."
+        },
+        {
+            "id": "wait",
+            "title": "Hold and wait",
+            "text": "Now car A wants to move into bay P2. But B is parked there, so A must wait. And while it waits, it keeps its own bay. This is called hold and wait.",
+            "say": "Now car A wants to move into bay P 2. But B is parked there, so A must wait. And while it waits, it keeps its own bay. This is called hold and wait."
+        },
+        {
+            "id": "circle",
+            "title": "A circle of waiting",
+            "text": "B wants C's bay. C wants D's bay. And D wants A's bay. Every car now waits for the next one, in a circle. No one can ever move. This is a deadlock."
+        },
+        {
+            "id": "detect",
+            "title": "Detecting the deadlock",
+            "text": "The system spots it by drawing who waits for whom. These arrows close into a loop, from A to B to C to D, and back to A. A loop means deadlock."
+        },
+        {
+            "id": "tow",
+            "title": "Your turn",
+            "text": "Your turn. To break the loop, the system can take a resource away by force. Select any red car, then press Tow car on the guide screen."
+        },
+        {
+            "id": "tow_auto",
+            "title": "Your turn",
+            "text": "Let's tow car D together."
+        },
+        {
+            "id": "unwind",
+            "title": "The jam clears",
+            "text": "The towed car leaves and frees its bay. The next car moves in and frees another bay, and the whole jam unwinds. This is called recovery by preemption."
+        },
+        {
+            "id": "outro",
+            "title": "Even better: avoid it",
+            "text": "Better still is to avoid deadlock before it happens. The Banker's Algorithm grants a request only if everyone can still finish. Try it in Banker mode. Now the lot is yours. Select a car, then a bay, and experiment."
+        },
+        {
+            "id": "banker_welcome",
+            "title": "Welcome to Banker mode",
+            "text": "Welcome to Banker mode. Here you stop deadlocks before they can happen, like a careful banker who only lends money when every loan can still be paid back."
+        },
+        {
+            "id": "banker_fleets",
+            "title": "Fleets and zones",
+            "text": "Each coloured fleet is a process. The two rows of bays are two types of resource: zone N in the north, and zone S in the south."
+        },
+        {
+            "id": "banker_alloc",
+            "title": "Allocation",
+            "text": "Cars parked in bays show what a fleet holds right now. That is its allocation."
+        },
+        {
+            "id": "banker_need",
+            "title": "Need",
+            "text": "Cars waiting on the street show what the fleet may still ask for, up to the maximum it declared. That is its need."
+        },
+        {
+            "id": "banker_request",
+            "title": "Request and available",
+            "text": "The cars at the gate are a new request. Fleet A wants one more bay in zone N. The empty bays are what is still available."
+        },
+        {
+            "id": "banker_safety",
+            "title": "The safety check",
+            "text": "Before saying yes, the banker imagines granting the request. Then it checks: could every fleet still finish, one after another, using the free bays plus the bays each finished fleet gives back? If such an order exists, the state is safe, and the request can be granted."
+        },
+        {
+            "id": "banker_turn",
+            "title": "Your turn",
+            "text": "Your turn. Look at the table, then press Grant or Deny."
+        },
+        {
+            "id": "banker_hint",
+            "title": "Your turn",
+            "text": "Here is a hint. After granting, fleet A needs only one more bay in zone S, and one is free. So fleet A can finish first."
+        },
+        {
+            "id": "banker_right",
+            "title": "Safe, well done",
+            "text": "Well done. After granting, fleet A can finish and return its bays, then B, then C, then D. A safe order exists, so granting was right. Watch the fleets light up in that order."
+        },
+        {
+            "id": "banker_wrong",
+            "title": "It was safe",
+            "text": "Not quite. Granting was safe. After granting, fleet A can finish and return its bays, then B, C and D. Denying only made fleet A wait for nothing. Watch the fleets light up in the safe order."
+        },
+        {
+            "id": "banker_outro",
+            "title": "What comes next",
+            "text": "The next levels teach the other rules: asking for more than the declared maximum, not enough free bays, and requests that fit but are unsafe. Then try challenge mode against the clock. Press Next when you are ready."
+        }
+    ]
+}

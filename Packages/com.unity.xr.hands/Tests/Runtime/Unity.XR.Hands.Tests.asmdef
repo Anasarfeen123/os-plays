@@ -1,0 +1,38 @@
+{
+    "name": "Unity.XR.Hands.Tests",
+    "rootNamespace": "",
+    "references": [
+        "Unity.XR.Hands",
+        "Unity.XR.Hands.Tests.OpenXR.MockHandsRuntime",
+        "Unity.InputSystem",
+        "Unity.InputSystem.TestFramework",
+        "Unity.XR.OpenXR",
+        "Unity.XR.OpenXR.Features.MockRuntime",
+        "Unity.XR.OpenXR.TestTooling",
+        "Unity.XR.Management"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "optionalUnityReferences": [
+      "TestAssemblies"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.xr.openxr",
+            "expression": "1.0.0",
+            "define": "UNITY_OPENXR_PACKAGE"
+        },
+        {
+            "name": "com.unity.xr.openxr",
+            "expression": "1.18.0-pre.1",
+            "define": "UNITY_OPENXR_HAS_EXTENSIBLE_HAND_TRACKING"
+        }
+    ],
+    "noEngineReferences": false
+}
