@@ -94,25 +94,43 @@ namespace Gridlock.Editor
             go.AddComponent<MusicCue>().Init(clip);
         }
 
-        /// <summary>Quest memory: music streams from disk; narration stays compressed in memory.</summary>
+        /// <summary>
+        /// Quest memory and frame time: music and long ambience stream from disk; narration and the scenarios' voice lines
+        /// stay compressed in memory; short effects are decoded once. Everything that does not stream loads with its scene,
+        /// so the first time a clip plays never stalls a frame on loading it.
+        /// </summary>
         static void ConfigureAudioImport()
         {
-            void Apply(string folder, AudioClipLoadType load, float quality)
+            void Apply(string folder, Func<string, AudioClipLoadType?> load, float? quality)
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:AudioClip", new[] { folder }))
                 {
-                    var importer = (AudioImporter)AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(guid));
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    var importer = (AudioImporter)AssetImporter.GetAtPath(path);
                     var settings = importer.defaultSampleSettings;
-                    if (settings.loadType == load && Mathf.Approximately(settings.quality, quality)) continue;
-                    settings.loadType = load;
+                    if (load(path) is not AudioClipLoadType type) continue;
+                    bool preload = type != AudioClipLoadType.Streaming;
+                    float q = quality ?? settings.quality;
+                    if (settings.loadType == type && settings.preloadAudioData == preload && Mathf.Approximately(settings.quality, q)) continue;
+                    settings.loadType = type;
                     settings.compressionFormat = AudioCompressionFormat.Vorbis;
-                    settings.quality = quality;
+                    settings.quality = q;
+                    settings.preloadAudioData = preload;
                     importer.defaultSampleSettings = settings;
                     importer.SaveAndReimport();
                 }
             }
-            Apply("Assets/Audio/Music", AudioClipLoadType.Streaming, 0.7f);
-            Apply(NarrationDir, AudioClipLoadType.CompressedInMemory, 0.8f);
+            static AudioClipLoadType? BySize(string path)
+            {
+                long bytes = new System.IO.FileInfo(path).Length;
+                return bytes > 1_500_000 ? AudioClipLoadType.Streaming
+                    : bytes > 300_000 ? AudioClipLoadType.CompressedInMemory
+                    : AudioClipLoadType.DecompressOnLoad;
+            }
+            Apply("Assets/Audio/Music", _ => AudioClipLoadType.Streaming, 0.7f);
+            Apply(NarrationDir, _ => AudioClipLoadType.CompressedInMemory, 0.8f);
+            foreach (var folder in new[] { "Assets/Audio", "Assets/Scenarios" })
+                Apply(folder, path => path.StartsWith("Assets/Audio/Music/") || path.StartsWith(NarrationDir + "/") ? null : BySize(path), null);
         }
 
         // =====================================================================================================
@@ -248,10 +266,8 @@ namespace Gridlock.Editor
 
             // DISPLAY
             var d = pages[1].transform;
-            var levels = QualitySettings.names;
-            ChoiceRow(d, 0, "GRAPHICS", "Detail level", Setting.Quality,
-                      levels.Select(l => l.Contains("Mobile") ? "PERFORMANCE" : l == "PC" ? "QUALITY" : l.ToUpperInvariant()).ToArray(),
-                      Enumerable.Range(0, levels.Length).Select(x => (float)x).ToArray());
+            ChoiceRow(d, 0, "GRAPHICS", "Sharpness and detail vs. speed", Setting.Quality,
+                      new[] { "PERFORMANCE", "BALANCED", "QUALITY" }, new[] { 0f, 1f, 2f });
             ChoiceRow(d, 1, "POST EFFECTS", "Glow and colour grading", Setting.PostEffects, new[] { "ON", "OFF" }, new[] { 1f, 0f });
             ChoiceRow(d, 2, "SHADOWS", "Sun shadows on the lot", Setting.Shadows, new[] { "ON", "OFF" }, new[] { 1f, 0f });
             ChoiceRow(d, 3, "SUBTITLES", "Captions under the narrator", Setting.Subtitles, new[] { "ON", "OFF" }, new[] { 1f, 0f });

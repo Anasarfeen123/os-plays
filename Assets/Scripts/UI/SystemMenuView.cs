@@ -34,11 +34,13 @@ namespace Gridlock.UI
 
         void Awake()
         {
-            resume.onClick.AddListener(menu.Close);
-            tour.onClick.AddListener(menu.ReplayTour);
-            restart.onClick.AddListener(menu.Restart);
-            home.onClick.AddListener(menu.Home);
-            quit.onClick.AddListener(menu.Quit);
+            // The two menu renderings (desktop overlay and XR panel) deliberately share the same routes. Keeping the
+            // click feedback here means every visible option has a complete, identical action path.
+            resume.onClick.AddListener(() => { menu.Click(); menu.Close(); });
+            tour.onClick.AddListener(() => { menu.Click(); menu.ReplayTour(); });
+            restart.onClick.AddListener(() => { menu.Click(); menu.Restart(); });
+            home.onClick.AddListener(() => { menu.Click(); menu.Home(); });
+            quit.onClick.AddListener(() => { menu.Click(); menu.Quit(); });
             settings.onClick.AddListener(() => { menu.Click(); ShowSettings(true); });
             help.onClick.AddListener(() => { menu.Click(); ShowSettings(false); });
 

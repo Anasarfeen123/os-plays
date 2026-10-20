@@ -112,6 +112,7 @@ namespace Gridlock.Editor
         {
             new GameObject("XR Interaction Manager", typeof(XRInteractionManager));
             new GameObject("EventSystem", typeof(EventSystem), typeof(XRUIInputModule));
+            new GameObject("UI Interaction Reliability").AddComponent<UIInteractionReliability>();
             var fader = new GameObject("Screen Fader").AddComponent<ScreenFader>();
             fader.Init(mats.Fade, arriveSound ? Clip("Hub/arrive.wav") : null);
             return fader;
@@ -911,6 +912,8 @@ namespace Gridlock.Editor
             // A is a GRIDLOCK shortcut, not jump.
             foreach (var jump in rig.GetComponentsInChildren<JumpProvider>(true)) jump.gameObject.SetActive(false);
             BuildControllerHands(rig);
+            TunePinchAndRays(rig);
+            rig.AddComponent<ComfortTurn>().Init(origin);
             if (seated) MakeSeated(rig);
             if (buildXRControls != null) BuildXRControls(rig, buildXRControls);
             else BuildMenuShortcut(rig);
@@ -958,9 +961,61 @@ namespace Gridlock.Editor
                 animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>($"{HandsDir}/{side}HandController.controller")
                                                      ?? throw new FileNotFoundException($"Missing {HandsDir}/{side}HandController.controller");
                 animator.applyRootMotion = false;
-                animator.cullingMode = AnimatorCullingMode.CullCompletely; // nothing to animate while the hand is hidden
+                // Culling by the skinned bounds could freeze the fingers mid-curl right in front of the eyes.
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
                 animator.gameObject.AddComponent<ControllerHandAnimator>().Init(
                     Action($"XRI {side} Interaction/Select Value"), Action($"XRI {side} Interaction/Activate Value"));
+
+                // On the grip pose: fingers wrap the handle axis (grip +Z), palm towards the other hand, the palm centre
+                // (the model's grip bone) 3 cm out from the handle's centre line. Measured by closing the hand on a 4 cm
+                // cylinder along the grip axis.
+                bool right = side == "Right";
+                var inGrip = Quaternion.LookRotation(Vector3.down, right ? Vector3.right : Vector3.left);
+                var palm = hand.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name.EndsWith("_grip"))
+                           ?? throw new InvalidOperationException($"{side} hand model has no grip bone");
+                var palmInHand = hand.transform.InverseTransformPoint(palm.position);
+                hand.AddComponent<ControllerGripPose>().Init(right, new Vector3(right ? 0.03f : -0.03f, 0f, 0f) - inGrip * palmInHand, inGrip);
+
+                // Held things sit in this hand: the controller's grab point is the palm of the hand model (which follows
+                // the grip pose), not the ray's origin at the tip of the controller, several centimetres ahead and above.
+                var palmAttach = new GameObject("Palm Attach").transform;
+                palmAttach.SetParent(hand.transform, false);
+                palmAttach.localPosition = palmInHand + new Vector3(0f, -0.035f, 0f); // just off the palm's surface
+                palmAttach.rotation = controller.rotation;
+                // (The near-far interactor's attach point is driven by its attach controller, which follows this anchor.)
+                var attachController = controller.GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.Attachment.InteractionAttachController>(true);
+                if (attachController != null) attachController.transformToFollow = palmAttach;
+                else
+                {
+                    var grabber = controller.GetComponentInChildren<NearFarInteractor>(true);
+                    if (grabber != null) grabber.attachTransform = palmAttach;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Hand pinch and pointing rays. The hands demo registers a pinch only at 100 % pinch strength and drops it below
+        /// 90 %; Quest's pinch strength is noisy and often peaks just under 1, so pinches were missed and pinch-drags let
+        /// go on their own. A pinch now starts at 80 % and holds down to 50 %. Every far ray (hands and controllers) is
+        /// stabilised so the small hand movement of a pinch or trigger pull does not knock it off a button.
+        /// </summary>
+        static void TunePinchAndRays(GameObject rig)
+        {
+            foreach (var reader in rig.GetComponentsInChildren<MonoBehaviour>(true).Where(b => b != null && b.GetType().Name == "ReleaseThresholdButtonReader"))
+            {
+                var so = new SerializedObject(reader);
+                so.FindProperty("m_PressThreshold").floatValue = 0.8f;
+                so.FindProperty("m_ReleaseThreshold").floatValue = 0.5f;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+            foreach (var nearFar in rig.GetComponentsInChildren<NearFarInteractor>(true))
+            {
+                if (nearFar.farInteractionCaster is not UnityEngine.XR.Interaction.Toolkit.Interactors.Casters.InteractionCasterBase caster) continue;
+                caster.enableStabilization = true;
+                caster.positionStabilization = 0.25f;
+                caster.angleStabilization = 20f;
+                caster.aimTarget = nearFar;
+                EditorUtility.SetDirty(caster);
             }
         }
 
@@ -975,13 +1030,14 @@ namespace Gridlock.Editor
         static Transform DesktopCameraTransform() =>
             Object.FindObjectsByType<DesktopCameraController>(FindObjectsInactive.Include, FindObjectsSortMode.None).First().transform;
 
-        /// <summary>Rigs without GRIDLOCK XR controls (the seated hub) still open the system menu with ≡.</summary>
+        /// <summary>Rigs without GRIDLOCK XR controls (the seated hub) still open the system menu with Y or ≡, as everywhere.</summary>
         static void BuildMenuShortcut(GameObject rig)
         {
             var controls = new GameObject("GRIDLOCK XR Controls");
             controls.transform.SetParent(rig.transform, false);
             var keys = controls.AddComponent<XRButtonShortcuts>();
             var link = controls.AddComponent<SystemMenuLink>();
+            UnityEditor.Events.UnityEventTools.AddPersistentListener(keys.ButtonY, link.Toggle);
             UnityEditor.Events.UnityEventTools.AddPersistentListener(keys.MenuButton, link.Toggle);
         }
 
@@ -1382,8 +1438,10 @@ namespace Gridlock.Editor
             var go = Panel(name, parent, x, y, w, h, background);
             var button = go.AddComponent<Button>();
             var colors = button.colors;
-            colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f);
-            colors.pressedColor = new Color(0.75f, 0.75f, 0.75f);
+            // Hover must read clearly at arm's length in a headset (the ray's dot sits behind on-top menus).
+            colors.highlightedColor = new Color(1.6f, 1.6f, 1.6f);
+            colors.selectedColor = Color.white;
+            colors.pressedColor = new Color(0.7f, 0.7f, 0.7f);
             button.colors = colors;
             var text = UIText("Label", go.transform, 16, 0, w - 32, h, label, size, textColor, TextAlignmentOptions.Center, FontStyles.Bold);
             text.enableAutoSizing = true;

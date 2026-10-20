@@ -105,7 +105,9 @@ namespace Gridlock.XR
             if (Mathf.Abs(moved) < swipeDistance) return;
             swipeUsed = true;
             if (aiming == swiping) Cancel();
-            origin.RotateAroundCameraUsingOriginUp(Mathf.Sign(moved) * GameSettings.SnapDegrees);
+            float degrees = Mathf.Sign(moved) * GameSettings.SnapDegrees;
+            if (ComfortTurn.Current != null) ComfortTurn.Current.Turn(degrees); // the same eased sweep as the stick
+            else origin.RotateAroundCameraUsingOriginUp(degrees);
         }
 
         void UpdateAim()

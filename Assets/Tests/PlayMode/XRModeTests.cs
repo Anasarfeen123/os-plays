@@ -82,6 +82,11 @@ namespace Gridlock.Tests
             var xrView = Object.FindObjectsByType<SystemMenuView>(FindObjectsSortMode.None).Single(v => v.GetComponent<Canvas>() != null);
             float distance = Vector3.Distance(xrView.transform.position, Camera.main.transform.position);
             Assert.That(distance, Is.InRange(0.6f, 0.95f), "the XR menu opens within arm's reach, for poking");
+            // UI writes no depth: the menu stays readable only if it draws after every other world canvas (the hub monitor).
+            int menuOrder = xrView.GetComponent<Canvas>().sortingOrder;
+            foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                if (canvas.isRootCanvas && canvas.renderMode == RenderMode.WorldSpace && !canvas.transform.IsChildOf(xrView.transform))
+                    Assert.Greater(menuOrder, canvas.sortingOrder, $"the menu draws over {canvas.name}");
             Assert.AreEqual(0f, Time.timeScale);
             GridlockSceneTests.Capture(capture);
             menu.Close();
@@ -130,6 +135,147 @@ namespace Gridlock.Tests
                           "the control room floor, stairs and gallery are teleport targets");
             Assert.IsNotNull(Object.FindFirstObjectByType<Gridlock.Hub.HubSeat>(), "point at the chair to sit at the desk");
             yield return OpenMenuInHeadset("xr_05_hub_menu");
+        }
+    
+
+        [UnityTest]
+        public IEnumerator Menu_OnePressOpens_RaysSeeOnlyTheMenu_WristOpensWithController()
+        {
+            GuideTour.Seen = true;
+            SceneManager.LoadScene("GridlockParkingLot");
+            yield return new WaitForSeconds(2.5f);
+            var menu = SystemMenu.Instance;
+
+            // On Quest one ≡ press can also arrive as Android Back (Esc): two toggles in a row are one press.
+            menu.Toggle();
+            menu.Toggle();
+            Assert.IsTrue(menu.IsOpen, "a doubled press still opens the menu");
+
+            var casters = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactors.Casters.CurveInteractionCaster>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            Assert.IsNotEmpty(casters);
+            Assert.IsTrue(casters.All(c => c.raycastMask.value == 0), "while open, the podium and the lot cannot catch the ray");
+            yield return new WaitForSecondsRealtime(0.4f);
+            menu.Toggle();
+            Assert.IsFalse(menu.IsOpen);
+            Assert.IsTrue(casters.All(c => c.raycastMask.value != 0), "closing gives the rays the scene back");
+
+            // Controllers: turning the left controller's palm side to the face shows the wrist menu, even while paused.
+            var origin = Object.FindFirstObjectByType<Unity.XR.CoreUtils.XROrigin>();
+            var left = origin.GetComponentsInChildren<Transform>(true).First(t => t.name == "Left Controller");
+            left.gameObject.SetActive(true);
+            foreach (var b in left.GetComponents<Behaviour>()) if (b.GetType().Name.Contains("TrackedPoseDriver")) b.enabled = false;
+            var head = origin.Camera.transform;
+            left.position = head.position + head.forward * 0.35f - Vector3.up * 0.15f;
+            left.rotation = Quaternion.FromToRotation(Vector3.right, (head.position - left.position).normalized); // +X towards the eyes
+            menu.Open();
+            yield return new WaitForSecondsRealtime(0.5f);
+            var wrist = origin.GetComponentInChildren<WristMenu>(true);
+            Assert.IsTrue(wrist.IsShown, "the wrist menu opens with a controller in hand");
+            menu.Close();
+            left.rotation = Quaternion.LookRotation(head.forward); // palm towards the other hand again
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.IsFalse(wrist.IsShown);
+
+            // The hands follow the controllers' grip pose.
+            foreach (var side in new[] { "Left", "Right" })
+                Assert.IsNotNull(origin.GetComponentsInChildren<Transform>(true).First(t => t.name == side + " Hand Model").GetComponent<ControllerGripPose>(),
+                                 $"{side} hand on the grip pose");
+        }
+
+        static T Private<T>(object target, string field) =>
+            (T)target.GetType().GetField(field, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(target);
+
+        [UnityTest]
+        public IEnumerator Settings_EveryOptionApplies_TurnIsEased_PinchIsForgiving()
+        {
+            GuideTour.Seen = true;
+            var saved = System.Enum.GetValues(typeof(Gridlock.Core.Setting)).Cast<Gridlock.Core.Setting>()
+                .ToDictionary(s => s, Gridlock.Core.GameSettings.Get);
+            try
+            {
+                SceneManager.LoadScene("GridlockParkingLot");
+                yield return new WaitForSeconds(2.5f);
+                var menu = SystemMenu.Instance;
+                menu.Open();
+                yield return null;
+                var view = Object.FindObjectsByType<SystemMenuView>(FindObjectsSortMode.None).Single(v => v.GetComponent<Canvas>() != null);
+
+                // Every segmented choice stores its value; every slider stores its value. Each tab is opened first, as a
+                // player would (a hidden tab's controls are wired when it is first shown).
+                var settingsView = view.GetComponentInChildren<SettingsView>(true);
+                view.GetComponentsInChildren<UnityEngine.UI.Button>(true).First(b => b.name == "SETTINGS").onClick.Invoke();
+                foreach (var tab in Private<UnityEngine.UI.Button[]>(settingsView, "tabs"))
+                {
+                    tab.onClick.Invoke();
+                    yield return null;
+                }
+                foreach (var choice in view.GetComponentsInChildren<SettingChoice>(true))
+                {
+                    var page = Private<GameObject[]>(settingsView, "pages").First(p => choice.transform.IsChildOf(p.transform));
+                    Private<UnityEngine.UI.Button[]>(settingsView, "tabs")[System.Array.IndexOf(Private<GameObject[]>(settingsView, "pages"), page)].onClick.Invoke();
+                    var setting = Private<Gridlock.Core.Setting>(choice, "setting");
+                    var buttons = Private<UnityEngine.UI.Button[]>(choice, "options");
+                    var values = Private<float[]>(choice, "values");
+                    for (int i = 0; i < buttons.Length; i++)
+                    {
+                        buttons[i].onClick.Invoke();
+                        Assert.AreEqual(values[i], Gridlock.Core.GameSettings.Get(setting), 1e-4f, $"{setting} option {i}");
+                    }
+                }
+                Private<UnityEngine.UI.Button[]>(settingsView, "tabs")[0].onClick.Invoke(); // AUDIO
+                foreach (var slider in view.GetComponentsInChildren<SettingSlider>(true))
+                {
+                    var setting = Private<Gridlock.Core.Setting>(slider, "setting");
+                    var control = Private<UnityEngine.UI.Slider>(slider, "slider");
+                    control.value = 0.3f;
+                    Assert.AreEqual(0.3f, Gridlock.Core.GameSettings.Get(setting), 1e-4f, $"{setting} slider");
+                }
+                Assert.AreEqual(0.3f, AudioListener.volume, 1e-4f, "MASTER drives the listener volume");
+                Gridlock.Core.GameSettings.Set(Gridlock.Core.Setting.Quality, 0f);
+                Assert.AreEqual(0.6f, QualitySettings.lodBias, 1e-4f, "GRAPHICS: PERFORMANCE applies");
+                Gridlock.Core.GameSettings.Set(Gridlock.Core.Setting.Quality, 2f);
+                Assert.AreEqual(1.6f, QualitySettings.lodBias, 1e-4f, "GRAPHICS: QUALITY applies");
+
+                // VR TURNING switches the stick between snap and smooth on the rig.
+                bool SmoothTurnOnRig() => Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                    .Where(b => b.GetType().Name == "ControllerInputActionManager")
+                    .All(b => (bool)b.GetType().GetProperty("smoothTurnEnabled")!.GetValue(b));
+                Gridlock.Core.GameSettings.Set(Gridlock.Core.Setting.SmoothTurn, 1f);
+                Assert.IsTrue(SmoothTurnOnRig(), "SMOOTH turning reaches the controllers");
+                Gridlock.Core.GameSettings.Set(Gridlock.Core.Setting.SmoothTurn, 0f);
+                Assert.IsFalse(SmoothTurnOnRig(), "SNAP turning reaches the controllers");
+                menu.Close();
+
+                // A snap is an eased sweep around the head, of the menu's SNAP ANGLE.
+                Gridlock.Core.GameSettings.Set(Gridlock.Core.Setting.SnapAngle, 1f); // 45°
+                var turn = ComfortTurn.Current;
+                Assert.IsNotNull(turn, "the rig turns through ComfortTurn");
+                var origin = Object.FindFirstObjectByType<Unity.XR.CoreUtils.XROrigin>();
+                var head = origin.Camera.transform;
+                float startYaw = head.eulerAngles.y;
+                var headPosition = head.position;
+                turn.Turn(Gridlock.Core.GameSettings.SnapDegrees);
+                yield return null;
+                yield return null;
+                float partial = Mathf.Abs(Mathf.DeltaAngle(startYaw, head.eulerAngles.y));
+                Assert.That(partial, Is.InRange(0.01f, 44f), "the view sweeps, it does not cut");
+                yield return new WaitForSeconds(0.4f);
+                Assert.AreEqual(45f, Mathf.DeltaAngle(startYaw, head.eulerAngles.y), 0.5f, "a whole snap angle");
+                Assert.Less(Vector3.Distance(headPosition, head.position), 0.01f, "around the head");
+
+                // Pinch: starts at 80 % strength and holds down to 50 %; the rays are stabilised.
+                foreach (var reader in origin.GetComponentsInChildren<MonoBehaviour>(true).Where(b => b.GetType().Name == "ReleaseThresholdButtonReader"))
+                {
+                    Assert.AreEqual(0.8f, (float)reader.GetType().GetProperty("pressThreshold")!.GetValue(reader), 1e-4f, reader.name);
+                    Assert.AreEqual(0.5f, (float)reader.GetType().GetProperty("releaseThreshold")!.GetValue(reader), 1e-4f, reader.name);
+                }
+                foreach (var ray in origin.GetComponentsInChildren<NearFarInteractor>(true))
+                    Assert.IsTrue(((UnityEngine.XR.Interaction.Toolkit.Interactors.Casters.InteractionCasterBase)ray.farInteractionCaster).enableStabilization, $"{ray.transform.parent.name} ray stabilised");
+            }
+            finally
+            {
+                foreach (var pair in saved) Gridlock.Core.GameSettings.Set(pair.Key, pair.Value);
+            }
         }
     }
 }

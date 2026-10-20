@@ -9,6 +9,8 @@ using UnityEngine.TestTools;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
+using UnityEngine.XR.Interaction.Toolkit.UI;
+using UnityEngine.UI;
 
 namespace Gridlock.Tests
 {
@@ -71,6 +73,23 @@ namespace Gridlock.Tests
             {
                 var hand = origin.GetComponentsInChildren<Transform>(true).First(t => t.name == side);
                 Assert.IsEmpty(hand.GetComponentsInChildren<Collider>(true), $"{scene}: {side} must not push what it holds");
+            }
+
+            // A caption or decorative frame must never be the first ray hit. The shared UI repair leaves hit targets on
+            // actual controls only, and gives every world-space control canvas an XR raycaster.
+            foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                                         .Where(c => c.rootCanvas.renderMode == RenderMode.WorldSpace))
+            {
+                bool Own(Component component) => component.GetComponentInParent<Canvas>(true) == canvas;
+                bool hasControl = canvas.GetComponentsInChildren<Selectable>(true).Any(Own);
+                if (hasControl)
+                    Assert.IsNotNull(canvas.GetComponent<TrackedDeviceGraphicRaycaster>(),
+                                     $"{scene}: {canvas.name} controls accept a controller ray");
+
+                foreach (var graphic in canvas.GetComponentsInChildren<Graphic>(true).Where(Own))
+                    if (graphic.GetComponentInParent<Selectable>(true) == null)
+                        Assert.IsFalse(graphic.raycastTarget,
+                                       $"{scene}: display-only {graphic.name} cannot block a button behind it");
             }
         }
     }

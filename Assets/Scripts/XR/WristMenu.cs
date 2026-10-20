@@ -7,8 +7,10 @@ namespace Gridlock.XR
 {
     /// <summary>
     /// Small control panel that floats just above the left hand.
-    /// Hand tracking: turn the left palm towards your face to show it, then poke its buttons with the right index finger.
-    /// Controllers: Y or the menu button toggles it above the left controller; point at it with the right ray and pull the trigger.
+    /// Turn the left palm towards your face to show it: a tracked hand's palm, or with a controller in hand the palm side of
+    /// the left controller (as if checking a watch on the inside of the wrist). Poke its buttons with the right index
+    /// finger, or point at them with the right ray and pull the trigger. <see cref="Toggle"/> also pins it open above the
+    /// left controller.
     /// </summary>
     public class WristMenu : MonoBehaviour
     {
@@ -70,25 +72,15 @@ namespace Gridlock.XR
             if (TryGetLeftPalm(out var palm, out var palmNormal))
             {
                 controllerToggled = false;
-                float alignment = Vector3.Dot(palmNormal, (head.position - palm).normalized);
-                if (!palmShown)
-                {
-                    palmTimer = alignment > showAlignment ? palmTimer + Time.deltaTime : 0f;
-                    palmShown = palmTimer >= showDelay;
-                }
-                else if (alignment < hideAlignment)
-                {
-                    palmShown = false;
-                    palmTimer = 0f;
-                }
-                show = palmShown;
+                show = PalmTowardsHead(palm, palmNormal);
                 anchor = palm + palmNormal * 0.03f;
                 lift = Vector3.up * 0.13f;
             }
             else if (leftController != null && leftController.gameObject.activeInHierarchy)
             {
-                palmShown = false;
-                show = controllerToggled;
+                // The left hand's palm faces the controller's +X (towards the right hand) when holding it.
+                bool palmUp = PalmTowardsHead(leftController.position, leftController.right);
+                show = controllerToggled || palmUp;
                 anchor = leftController.position;
                 lift = Vector3.up * 0.16f;
             }
@@ -116,8 +108,26 @@ namespace Gridlock.XR
                 snapNext = false;
                 return;
             }
-            float t = 1f - Mathf.Exp(-followSharpness * Time.deltaTime);
+            float t = 1f - Mathf.Exp(-followSharpness * Time.unscaledDeltaTime);
             transform.SetPositionAndRotation(Vector3.Lerp(transform.position, position, t), Quaternion.Slerp(transform.rotation, rotation, t));
+        }
+
+        /// <summary>Palm turned to the eyes for a moment (with hysteresis so it does not flicker at the edge).</summary>
+        bool PalmTowardsHead(Vector3 palm, Vector3 palmNormal)
+        {
+            float alignment = Vector3.Dot(palmNormal, (head.position - palm).normalized);
+            if (!palmShown)
+            {
+                // Unscaled: the menu must open while the game is paused too.
+                palmTimer = alignment > showAlignment ? palmTimer + Time.unscaledDeltaTime : 0f;
+                palmShown = palmTimer >= showDelay;
+            }
+            else if (alignment < hideAlignment)
+            {
+                palmShown = false;
+                palmTimer = 0f;
+            }
+            return palmShown;
         }
 
         void SetShown(bool value)

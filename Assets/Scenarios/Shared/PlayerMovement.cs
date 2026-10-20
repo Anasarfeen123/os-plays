@@ -24,8 +24,10 @@ public class PlayerMovement : MonoBehaviour
     /// <summary>Turn the view by degrees (touch drag): yaw turns the body, pitch tilts the camera.</summary>
     public void AddLook(float yawDegrees, float pitchDegrees)
     {
-        cameraPitch = Mathf.Clamp(cameraPitch - pitchDegrees, -89f, 89f);
-        transform.Rotate(Vector3.up * yawDegrees);
+        // GRIDLOCK: the menu's LOOK SPEED and INVERT LOOK.
+        float speed = Gridlock.Core.GameSettings.LookMultiplier;
+        cameraPitch = Mathf.Clamp(cameraPitch - pitchDegrees * speed * Gridlock.Core.GameSettings.LookInvert, -89f, 89f);
+        transform.Rotate(Vector3.up * yawDegrees * speed);
     }
 
     void Start()
@@ -73,7 +75,9 @@ public class PlayerMovement : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
         if (Mouse.current != null)
         {
-            Vector2 delta = Mouse.current.delta.ReadValue() * (lookSensitivity * 0.1f);
+            // GRIDLOCK: the menu's LOOK SPEED and INVERT LOOK.
+            Vector2 delta = Mouse.current.delta.ReadValue() * (lookSensitivity * 0.1f * Gridlock.Core.GameSettings.LookMultiplier);
+            delta.y *= Gridlock.Core.GameSettings.LookInvert;
             mouseX = delta.x;
             mouseY = delta.y;
         }

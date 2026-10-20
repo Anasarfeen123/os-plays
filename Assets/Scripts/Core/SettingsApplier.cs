@@ -22,9 +22,21 @@ namespace Gridlock.Core
         {
             AudioListener.volume = GameSettings.Get(Setting.Master);
 
-            bool post = GameSettings.IsOn(Setting.PostEffects);
+            // On the Quest the post stack is off for the frame rate (QuestPerformance); the setting must not bring it back.
+            bool quest = Gridlock.XR.QuestPerformance.IsStandaloneHeadset;
+            bool post = GameSettings.IsOn(Setting.PostEffects) && !quest;
+            int detail = GameSettings.Quality;
             foreach (var cam in FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if (cam.TryGetComponent<UniversalAdditionalCameraData>(out var data)) data.renderPostProcessing = post;
+            {
+                if (!cam.TryGetComponent<UniversalAdditionalCameraData>(out var data)) continue;
+                data.renderPostProcessing = post;
+                // Edge smoothing on monitors and phones; the Quest gets MSAA from its render asset instead.
+                if (!quest) data.antialiasing = detail switch { 0 => AntialiasingMode.None, 1 => AntialiasingMode.FastApproximateAntialiasing, _ => AntialiasingMode.SubpixelMorphologicalAntiAliasing };
+            }
+
+            // GRAPHICS: the same three presets on every platform (each platform has its own render asset).
+            UnityEngine.XR.XRSettings.eyeTextureResolutionScale = quest ? new[] { 0.85f, 1f, 1.1f }[detail] : new[] { 0.85f, 1f, 1.2f }[detail];
+            QualitySettings.lodBias = new[] { 0.6f, 1f, 1.6f }[detail];
 
             bool shadows = GameSettings.IsOn(Setting.Shadows);
             foreach (var light in FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None))

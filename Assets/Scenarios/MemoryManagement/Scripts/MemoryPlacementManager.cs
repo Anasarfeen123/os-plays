@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 public class MemoryPlacementManager : MonoBehaviour
 {
@@ -91,19 +92,23 @@ public class MemoryPlacementManager : MonoBehaviour
             FeedbackType.Normal);
     }
 
-    public void TryPlaceBox(GameObject box, int frameIndex)
+    /// <summary>
+    /// Asks to load <paramref name="box"/>'s page into frame <paramref name="frameIndex"/>. True when that was the right
+    /// move (the page is loaded, or it was a hit and the box went back to its shelf); false leaves the box where it is.
+    /// </summary>
+    public bool TryPlaceBox(GameObject box, int frameIndex)
     {
         if (processing || box == null)
-            return;
+            return false;
 
         if (frameIndex < 0 || frameIndex >= frames.Length)
-            return;
+            return false;
 
         if (referenceIndex >= referenceString.Length)
         {
             Show("Algorithm complete. Select an algorithm to play again.",
                 FeedbackType.Normal);
-            return;
+            return false;
         }
 
         int page = GetPageNumber(box);
@@ -113,7 +118,7 @@ public class MemoryPlacementManager : MonoBehaviour
             PlayIncorrectPlacementSound();
             Show("This box has no valid page number. Check its Page Boxes entry.",
                 FeedbackType.Wrong);
-            return;
+            return false;
         }
 
         int expectedPage = CurrentPage();
@@ -123,7 +128,7 @@ public class MemoryPlacementManager : MonoBehaviour
             PlayIncorrectPlacementSound();
             Show($"WRONG PAGE\nPlace page {expectedPage} next.",
                 FeedbackType.Wrong);
-            return;
+            return false;
         }
 
         processing = true;
@@ -139,7 +144,7 @@ public class MemoryPlacementManager : MonoBehaviour
 
             Advance(
                 $"CORRECT — HIT\nPage {page} is already in Frame {existingFrame + 1}.");
-            return;
+            return true;
         }
 
         // Empty frames must be filled before replacement.
@@ -156,7 +161,7 @@ public class MemoryPlacementManager : MonoBehaviour
                     FeedbackType.Wrong);
 
                 processing = false;
-                return;
+                return false;
             }
 
             PutPageInFrame(page, box, frameIndex);
@@ -166,7 +171,7 @@ public class MemoryPlacementManager : MonoBehaviour
 
             Advance(
                 $"CORRECT — PAGE FAULT\nPage {page} loaded into Frame {frameIndex + 1}.");
-            return;
+            return true;
         }
 
         // Memory is full: calculate the correct victim.
@@ -181,7 +186,7 @@ public class MemoryPlacementManager : MonoBehaviour
                 FeedbackType.Wrong);
 
             processing = false;
-            return;
+            return false;
         }
 
         int evictedPage = frames[victimFrame];
@@ -197,6 +202,31 @@ public class MemoryPlacementManager : MonoBehaviour
 
         Advance(
             $"CORRECT — PAGE FAULT\nPage {page} replaced page {evictedPage} in Frame {victimFrame + 1}.");
+        return true;
+    }
+
+    /// <summary>The box's page is loaded in a frame (it sits on that frame's pallet and cannot be taken off by hand).</summary>
+    public bool IsResident(GameObject box) => System.Array.IndexOf(residentBoxes, box) >= 0;
+
+    /// <summary>The frame a resident box is in (0-based), or -1.</summary>
+    public int FrameOf(GameObject box) => System.Array.IndexOf(residentBoxes, box);
+
+    /// <summary>A box that is not in memory goes back to its shelf (dropped somewhere else, or on the wrong frame).</summary>
+    public void ReturnToStart(GameObject box)
+    {
+        if (box != null && !IsResident(box))
+            ReturnBoxToStart(box);
+    }
+
+    /// <summary>
+    /// Pages in memory are moved by the algorithm, not by hand: a resident box cannot be grabbed until it is evicted,
+    /// so the frames always show what the manager holds.
+    /// </summary>
+    private static void SetGrabbable(GameObject box, bool grabbable)
+    {
+        var grab = box.GetComponent<XRGrabInteractable>();
+        if (grab != null)
+            grab.enabled = grabbable;
     }
 
     private void PlayCorrectPlacementSound()
@@ -325,19 +355,10 @@ public class MemoryPlacementManager : MonoBehaviour
     {
         frames[frameIndex] = page;
         residentBoxes[frameIndex] = box;
+        SetGrabbable(box, false);
 
-        box.transform.SetParent(frameSlots[frameIndex], false);
-        box.transform.localPosition = Vector3.zero;
-        box.transform.localRotation = Quaternion.identity;
-
-        Rigidbody body = box.GetComponent<Rigidbody>();
-
-        if (body != null)
-        {
-            body.linearVelocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
-            body.isKinematic = true;
-        }
+        // GRIDLOCK: glides onto the pallet instead of jumping there.
+        BoxGlide.To(box, frameSlots[frameIndex], Vector3.zero, Quaternion.identity, kinematicAfter: true);
     }
 
     private void ReturnBoxToStart(GameObject box)
@@ -345,26 +366,22 @@ public class MemoryPlacementManager : MonoBehaviour
         if (box == null)
             return;
 
+        SetGrabbable(box, true);
+
         Transform originalParent = startParents.TryGetValue(box, out Transform parent)
             ? parent
             : null;
 
-        box.transform.SetParent(originalParent, true);
-
-        if (startPositions.TryGetValue(box, out Vector3 position))
-            box.transform.position = position;
-
-        if (startRotations.TryGetValue(box, out Quaternion rotation))
-            box.transform.rotation = rotation;
-
-        Rigidbody body = box.GetComponent<Rigidbody>();
-
-        if (body != null)
+        Vector3 position = startPositions.TryGetValue(box, out Vector3 p) ? p : box.transform.position;
+        Quaternion rotation = startRotations.TryGetValue(box, out Quaternion r) ? r : box.transform.rotation;
+        if (originalParent != null)
         {
-            body.isKinematic = false;
-            body.linearVelocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
+            position = originalParent.InverseTransformPoint(position);
+            rotation = Quaternion.Inverse(originalParent.rotation) * rotation;
         }
+
+        // GRIDLOCK: glides back to its table instead of jumping there.
+        BoxGlide.To(box, originalParent, position, rotation, kinematicAfter: false);
     }
 
     private void Advance(string message)

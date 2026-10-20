@@ -26,7 +26,7 @@ namespace Gridlock.Core
         static readonly Dictionary<Setting, float> Defaults = new Dictionary<Setting, float>
         {
             { Setting.Master, 1f }, { Setting.Music, 0.6f }, { Setting.Effects, 0.85f }, { Setting.Voice, 1f },
-            { Setting.Quality, -1f }, // -1: the project's default quality level
+            { Setting.Quality, 1f }, // detail preset: 0 performance, 1 balanced, 2 quality
             { Setting.PostEffects, 1f }, { Setting.Shadows, 1f }, { Setting.Subtitles, 1f },
             { Setting.LookSpeed, 0.5f }, { Setting.InvertLook, 0f }, { Setting.SmoothTurn, 0f }, { Setting.SnapAngle, 1f },
             { Setting.SmoothMove, 1f },
@@ -51,11 +51,7 @@ namespace Gridlock.Core
         public static void Set(Setting setting, float value)
         {
             Load();
-            if (setting == Setting.Quality)
-            {
-                value = Mathf.Clamp(Mathf.RoundToInt(value), 0, QualitySettings.names.Length - 1);
-                QualitySettings.SetQualityLevel((int)value, applyExpensiveChanges: true);
-            }
+            if (setting == Setting.Quality) value = Mathf.Clamp(Mathf.RoundToInt(value), 0, 2);
             values[setting] = value;
             PlayerPrefs.SetFloat(Key(setting), value);
             PlayerPrefs.Save();
@@ -71,8 +67,6 @@ namespace Gridlock.Core
                 PlayerPrefs.DeleteKey(Key(pair.Key));
                 values[pair.Key] = pair.Value;
             }
-            values[Setting.Quality] = DefaultQuality;
-            QualitySettings.SetQualityLevel(DefaultQuality, applyExpensiveChanges: true);
             PlayerPrefs.Save();
             Changed?.Invoke();
         }
@@ -83,6 +77,7 @@ namespace Gridlock.Core
         public static float Effects { get => Get(Setting.Effects); set => Set(Setting.Effects, Mathf.Clamp01(value)); }
         public static float Voice { get => Get(Setting.Voice); set => Set(Setting.Voice, Mathf.Clamp01(value)); }
         public static bool AutoTours { get => IsOn(Setting.AutoTours); set => Set(Setting.AutoTours, value ? 1f : 0f); }
+        /// <summary>GRAPHICS preset: 0 performance, 1 balanced, 2 quality (applied by <see cref="SettingsApplier"/>).</summary>
         public static int Quality { get => GetIndex(Setting.Quality); set => Set(Setting.Quality, value); }
 
         /// <summary>Look / orbit speed multiplier, 0.4× to 1.6× (1× in the middle of the slider).</summary>
@@ -94,9 +89,6 @@ namespace Gridlock.Core
         /// <summary>Linear 0..1 to mixer decibels (silence at the bottom of the slider).</summary>
         public static float ToDecibels(float linear) => linear <= 0.0001f ? -80f : Mathf.Log10(linear) * 20f;
 
-        static int defaultQuality;
-        static int DefaultQuality => defaultQuality;
-
         static string Key(Setting setting) => "gridlock." + setting.ToString().ToLowerInvariant();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -104,17 +96,16 @@ namespace Gridlock.Core
         {
             loaded = false;
             Load();
-            if (PlayerPrefs.HasKey(Key(Setting.Quality))) QualitySettings.SetQualityLevel(Quality, applyExpensiveChanges: true);
         }
 
         static void Load()
         {
             if (loaded) return;
             loaded = true;
-            defaultQuality = QualitySettings.GetQualityLevel();
             foreach (var pair in Defaults)
                 values[pair.Key] = PlayerPrefs.GetFloat(Key(pair.Key), pair.Value);
-            if (values[Setting.Quality] < 0f) values[Setting.Quality] = defaultQuality;
+            // GRAPHICS used to store a quality-level index (-1 for the default); those map onto the presets.
+            values[Setting.Quality] = Mathf.Clamp(Mathf.RoundToInt(values[Setting.Quality] < 0f ? 1f : values[Setting.Quality]), 0, 2);
         }
     }
 }

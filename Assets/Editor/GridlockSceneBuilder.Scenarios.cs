@@ -71,6 +71,7 @@ namespace Gridlock.Editor
                 ("knobSprite", AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd")));
             AddScenarioComponent(glue, "ScenarioXRInteraction");
             AddScenarioComponent(glue, "CpuScenarioAdapter", ("buttons", buttons), ("desktop", desktop));
+            AddScenarioComponent(glue, "CpuLabLayout"); // desks, screens and labels re-placed once the arena has built
             // Labels sized to be read and kept inside their boxes; floating ones on cards.
             AddScenarioComponent(glue, "ScenarioTextFit", ("cardSprite", AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd")));
 
@@ -119,10 +120,18 @@ namespace Gridlock.Editor
 
             // The boxes were on the scenario's own "Grabable" interaction layer, which GRIDLOCK's hands and controllers do
             // not grab: add Default so the rig can pick them up. Smooth, non-tunnelling physics while they are carried and thrown.
-            foreach (var grab in Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            var grabs = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            FixEmptyMeshColliders(scene, grabs);
+            foreach (var grab in grabs)
             {
                 grab.interactionLayers |= UnityEngine.XR.Interaction.Toolkit.InteractionLayerMask.GetMask("Default");
+                // Their physics layer (8, "Grabable" in the original project) has no name here and the rig's hands only
+                // feel Default: without this, a hand closing on a box found nothing to grab.
+                grab.gameObject.layer = 0;
+                foreach (var c in grab.GetComponentsInChildren<Collider>(true)) c.gameObject.layer = 0;
                 grab.useDynamicAttach = true; // held where the hand closed on it
+                // Grabbed with the ray (point and grip), the box comes to the hand instead of hanging at the ray's end.
+                grab.farAttachMode = UnityEngine.XR.Interaction.Toolkit.Attachment.InteractableFarAttachMode.Near;
                 grab.throwOnDetach = true;
                 var body = grab.GetComponent<Rigidbody>();
                 if (body == null) continue;
@@ -131,13 +140,7 @@ namespace Gridlock.Editor
                 body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
             }
 
-            // Every screen answers the controller rays as well as the mouse.
-            foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                if (canvas.renderMode != RenderMode.WorldSpace || !canvas.isRootCanvas) continue;
-                if (canvas.GetComponent<TrackedDeviceGraphicRaycaster>() == null) canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
-                if (canvas.GetComponent<GraphicRaycaster>() == null) canvas.gameObject.AddComponent<GraphicRaycaster>();
-            }
+            WireScenarioScreens();
 
             // Desktop and phone: look at (or tap) a box to pick it up, then a pallet to put it there.
             var manager = Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None)
@@ -156,13 +159,22 @@ namespace Gridlock.Editor
             }
             var zones = Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Where(b => b.GetType().Name == "MemoryFrameZone").ToArray();
+            RegroupFramePallets(zones);
             var adapter = AddScenarioComponent(glue, "MemoryScenarioAdapter", ("manager", manager), ("carryAnchor", view.transform));
             var so = new SerializedObject(adapter);
             SetArray(so.FindProperty("boxes"), boxes.Count, (p, i) => p.objectReferenceValue = boxes[i]);
             SetArray(so.FindProperty("pages"), pages.Count, (p, i) => p.intValue = pages[i]);
             SetArray(so.FindProperty("frames"), zones.Length, (p, i) => p.objectReferenceValue = zones[i].transform.parent);
             SetArray(so.FindProperty("frameIndices"), zones.Length, (p, i) => p.intValue = new SerializedObject(zones[i]).FindProperty("frameIndex").intValue);
+            SetArray(so.FindProperty("zones"), zones.Length, (p, i) => p.objectReferenceValue = zones[i]);
             so.ApplyModifiedPropertiesWithoutUndo();
+
+            // The feedback card follows the head: low and to the right, clear of the screens and their buttons.
+            var follower = Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .First(b => b.GetType().Name == "PlayerFeedbackFollower");
+            var followerSo = new SerializedObject(follower);
+            followerSo.FindProperty("localOffset").vector3Value = new Vector3(0.62f, -0.42f, 1.4f);
+            followerSo.ApplyModifiedPropertiesWithoutUndo();
             AddScenarioComponent(glue, "ScenarioDesktopControls",
                 ("movement", player.GetComponent("PlayerMovement")), ("interaction", player.GetComponent("PlayerInteraction")),
                 ("knobSprite", AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd")));
@@ -176,6 +188,97 @@ namespace Gridlock.Editor
             RenderThumb(view, MemoryThumbPath);
             EditorSceneManager.SaveScene(scene, MemoryScenePath);
             Debug.Log($"[GRIDLOCK] Built {MemoryScenePath} (boxes {boxes.Count}, frames {zones.Length})");
+        }
+
+        /// <summary>
+        /// The warehouse kit's mesh colliders lost their meshes on import, so they collide with nothing: the frame pallets
+        /// on the rack let a released box fall straight through to the floor. A frame's pallet gets a box collider around
+        /// its model (a pallet is a flat slab); every other empty one is removed (a box around a whole rack or shelf would
+        /// wall off the space in front of it).
+        /// </summary>
+        static void FixEmptyMeshColliders(UnityEngine.SceneManagement.Scene scene,
+                                          UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] grabs)
+        {
+            int boxed = 0, removed = 0;
+            foreach (var mc in scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<MeshCollider>(true)).Where(m => m.sharedMesh == null).ToArray())
+            {
+                var go = mc.gameObject;
+                bool framePallet = go.name.StartsWith("EuroPallet") && go.transform.parent != null &&
+                                   go.transform.parent.GetComponentsInChildren<MonoBehaviour>(true).Any(b => b != null && b.GetType().Name == "MemoryFrameZone");
+                bool hasOther = !framePallet || go.GetComponents<Collider>().Any(c => c != mc);
+                Object.DestroyImmediate(mc);
+                Bounds? local = null;
+                foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null))
+                {
+                    var mb = mf.sharedMesh.bounds;
+                    for (int corner = 0; corner < 8; corner++)
+                    {
+                        var p = mb.center + Vector3.Scale(mb.extents, new Vector3((corner & 1) == 0 ? -1 : 1, (corner & 2) == 0 ? -1 : 1, (corner & 4) == 0 ? -1 : 1));
+                        p = go.transform.InverseTransformPoint(mf.transform.TransformPoint(p));
+                        if (local is Bounds b) { b.Encapsulate(p); local = b; }
+                        else local = new Bounds(p, Vector3.zero);
+                    }
+                }
+                if (hasOther || local == null) { removed++; continue; }
+                var box = go.AddComponent<BoxCollider>();
+                box.center = local.Value.center;
+                box.size = local.Value.size;
+                boxed++;
+            }
+            foreach (var grab in grabs) grab.colliders.RemoveAll(c => c == null);
+            Debug.Log($"[GRIDLOCK] {scene.path}: {boxed} empty mesh colliders boxed, {removed} removed");
+        }
+
+        /// <summary>
+        /// In the imported scene two frames' pallets sit under each other's frame object (Frame2's pallets are under the
+        /// Frame3 trigger and the other way round), so pointing at a pallet chose the wrong frame. Each pallet joins the
+        /// frame whose trigger is above it.
+        /// </summary>
+        static void RegroupFramePallets(MonoBehaviour[] zones)
+        {
+            var frameRoots = zones.Select(z => z.transform.parent).Distinct().ToArray();
+            foreach (var pallet in frameRoots.SelectMany(r => r.Cast<Transform>()).Where(t => t.name.StartsWith("EuroPallet")).ToArray())
+            {
+                var renderers = pallet.GetComponentsInChildren<Renderer>(true);
+                if (renderers.Length == 0) continue;
+                var centre = renderers.Aggregate(renderers[0].bounds, (b, r) => { b.Encapsulate(r.bounds); return b; }).center;
+                var zone = zones.FirstOrDefault(z =>
+                {
+                    var t = z.GetComponent<Collider>().bounds;
+                    return centre.x >= t.min.x && centre.x <= t.max.x;
+                });
+                if (zone == null || pallet.parent == zone.transform.parent) continue;
+                Debug.Log($"[GRIDLOCK] {pallet.name}: {pallet.parent.name} -> {zone.transform.parent.name}");
+                pallet.SetParent(zone.transform.parent, true);
+            }
+        }
+
+        /// <summary>
+        /// Scenario screens for the controller rays. UI raycasts each canvas separately: buttons on a nested canvas (the
+        /// warehouse's algorithm and quiz screens) are only found by a raycaster on that nested canvas, so every canvas
+        /// with buttons in a world-space hierarchy gets an XR raycaster. Canvases with nothing to press (box and rack
+        /// labels, the floating feedback card) stop catching rays, so they never hide a box or a button behind them.
+        /// </summary>
+        static void WireScenarioScreens()
+        {
+            int wired = 0, cleared = 0;
+            foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (canvas.GetComponentInParent<XROrigin>(true) != null) continue;
+                if (canvas.GetComponentsInParent<Canvas>(true).Last().renderMode != RenderMode.WorldSpace) continue;
+                bool Own(Component c) => c.GetComponentInParent<Canvas>(true) == canvas;
+                if (canvas.GetComponentsInChildren<Selectable>(true).Any(Own))
+                {
+                    if (canvas.GetComponent<TrackedDeviceGraphicRaycaster>() == null) canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+                    if (canvas.GetComponent<GraphicRaycaster>() == null) canvas.gameObject.AddComponent<GraphicRaycaster>();
+                    wired++;
+                    continue;
+                }
+                foreach (var raycaster in canvas.GetComponents<BaseRaycaster>()) Object.DestroyImmediate(raycaster);
+                foreach (var graphic in canvas.GetComponentsInChildren<Graphic>(true).Where(Own)) graphic.raycastTarget = false;
+                cleared++;
+            }
+            Debug.Log($"[GRIDLOCK] screens: {wired} canvases take rays, {cleared} display-only");
         }
 
         // =====================================================================================================
@@ -396,7 +499,8 @@ namespace Gridlock.Editor
             "of the reference string. When every frame is full, the algorithm picks the victim: <b>FIFO</b> the oldest, <b>LRU</b> the " +
             "least recently used, <b>Optimal</b> the one needed furthest in the future.\n\n" +
             "<b><color=#FBBF24>CONTROLS</color></b>\n" +
-            "<b>Headset</b>  grab a box with the grip and put it on a pallet; press the screens with the ray or a fingertip.\n" +
+            "<b>Headset</b>  grab a box with the grip (close by, or point at it) and let go of it on a frame's pallet, or just in " +
+            "front of the rack below it. A wrong frame sends the box back to its table. Press the screens with the ray (trigger).\n" +
             "<b>Desktop</b>  WASD walk, mouse look, <b>E</b> or click a box to pick it up, then a pallet to put it there.\n" +
             "<b>Phone</b>  drag to look, two fingers to walk, tap a box, then a pallet.\n" +
             HeadsetHowTo;

@@ -50,6 +50,9 @@ public class ScenarioTextFit : MonoBehaviour
                 var display = GameObject.Find(name);
                 if (display != null) FaceRoom(display.transform); // every scan: the station re-aims it when it rebuilds
             }
+            // OnObject raycasts against colliders; the layout pass may just have moved them (the quiz wall), so sync first
+            // or the same kind of label comes out with a card on one row and without on the next.
+            Physics.SyncTransforms();
             foreach (var text in FindObjectsByType<TextMeshPro>(FindObjectsSortMode.None))
                 if (fitted.Add(text)) Fit(text);
             fitted.RemoveWhere(t => t == null);
@@ -115,7 +118,8 @@ public class ScenarioTextFit : MonoBehaviour
     {
         var text = card.Text;
         if (text == null) return;
-        if (!force && card.LastText == text.text && card.Last == text.textBounds) return;
+        // textBounds walks every character, so with unchanged text it is only re-checked every few frames.
+        if (!force && card.LastText == text.text && (Time.frameCount % 10 != 0 || card.Last == text.textBounds)) return;
         card.LastText = text.text;
         bool empty = string.IsNullOrWhiteSpace(text.GetParsedText());
         card.Fill.enabled = card.Edge.enabled = !empty && text.isActiveAndEnabled;

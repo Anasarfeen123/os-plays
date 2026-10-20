@@ -74,6 +74,8 @@ public class LiveChallengeController : MonoBehaviour
 
     public event Action<bool> OnChallengeAnswered;
 
+    private static readonly Color OptionIdle = new Color(0.19f, 0.29f, 0.44f);
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -185,37 +187,38 @@ public class LiveChallengeController : MonoBehaviour
 
         // ── Title Header ──────────────────────────────────────────────
         titleTMP = CreateText(contentRoot.transform, "StationTitle_TMP",
-            new Vector3(0f, 1.35f, -0.01f), new Vector2(5.6f, 0.40f),
+            new Vector3(0f, 1.20f, -0.01f), new Vector2(5.6f, 0.40f),
             "CPU SCHEDULING CHALLENGE STATION", 0.72f, FontStyles.Bold,
             new Color(0.0f, 0.90f, 1.0f), TextAlignmentOptions.Center);
 
         // ── Status Bar (Progress, XP, Accuracy) ────────────────────────
         statusTMP = CreateText(contentRoot.transform, "StationStatus_TMP",
-            new Vector3(0f, 1.10f, -0.01f), new Vector2(5.6f, 0.28f),
+            new Vector3(0f, 0.98f, -0.01f), new Vector2(5.6f, 0.28f),
             "INTERACTIVE LAB STATION • 4-OPTION QUIZ", 0.38f, FontStyles.Normal,
             new Color(0.65f, 0.75f, 0.88f), TextAlignmentOptions.Center);
 
         // ── Category / Difficulty Tag ─────────────────────────────────
         categoryTMP = CreateText(contentRoot.transform, "CategoryTag_TMP",
-            new Vector3(0f, 0.85f, -0.01f), new Vector2(5.6f, 0.28f),
+            new Vector3(0f, 0.78f, -0.01f), new Vector2(5.6f, 0.28f),
             "", 0.45f, FontStyles.Bold,
             new Color(1.0f, 0.75f, 0.2f), TextAlignmentOptions.Center);
 
         // ── Question Body Text (Large, crisp, high legibility) ─────────
         questionTMP = CreateText(contentRoot.transform, "QuestionText_TMP",
-            new Vector3(0f, 0.50f, -0.01f), new Vector2(5.5f, 0.65f),
+            new Vector3(0f, 0.48f, -0.01f), new Vector2(5.5f, 0.55f),
             "Welcome to the CPU Scheduling Challenge Lab.\nTest your operating system scheduling knowledge in first-person 3D.",
             0.54f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
         questionTMP.textWrappingMode = TextWrappingModes.Normal;
 
         // ── Process Table / Supporting Line ───────────────────────────
         processTableTMP = CreateText(contentRoot.transform, "ProcessTable_TMP",
-            new Vector3(0f, 0.15f, -0.01f), new Vector2(5.5f, 0.32f),
+            new Vector3(0f, 0.20f, -0.01f), new Vector2(5.5f, 0.28f),
             "", 0.40f, FontStyles.Normal,
             new Color(0.35f, 0.85f, 1.0f), TextAlignmentOptions.Center);
 
         // ── 4 World-Space Answer Option Buttons (A, B, C, D) directly on wall ──
-        float[] rowY = new float[] { -0.12f, -0.48f, -0.84f, -1.20f };
+        // GRIDLOCK: rows and the feedback / control line no longer overlap.
+        float[] rowY = new float[] { -0.06f, -0.38f, -0.70f, -1.02f };
         char[] letters = new char[] { 'A', 'B', 'C', 'D' };
 
         for (int i = 0; i < 4; i++)
@@ -229,10 +232,11 @@ public class LiveChallengeController : MonoBehaviour
             btnObj.transform.SetParent(contentRoot.transform, false);
             btnObj.transform.localPosition = new Vector3(0f, yPos, 0f);
             btnObj.transform.localRotation = Quaternion.identity;
-            btnObj.transform.localScale = new Vector3(5.40f, 0.30f, 0.03f);
+            btnObj.transform.localScale = new Vector3(5.40f, 0.28f, 0.03f);
 
             var rend = btnObj.GetComponent<Renderer>();
-            Material optMat = new Material(litShader) { color = new Color(0.12f, 0.16f, 0.22f) };
+            // GRIDLOCK: a shade lighter than the wall, so the answer rows read as buttons in a headset.
+            Material optMat = new Material(litShader) { color = OptionIdle };
             rend.sharedMaterial = optMat;
 
             // BoxCollider for first-person interaction
@@ -261,12 +265,12 @@ public class LiveChallengeController : MonoBehaviour
 
         // ── Feedback Title & Explanation ──────────────────────────────
         feedbackTitleTMP = CreateText(contentRoot.transform, "FeedbackTitle_TMP",
-            new Vector3(0f, -1.36f, -0.01f), new Vector2(5.5f, 0.30f),
+            new Vector3(-0.85f, -1.30f, -0.01f), new Vector2(3.7f, 0.26f),
             "", 0.42f, FontStyles.Bold,
             new Color(0.2f, 0.9f, 0.45f), TextAlignmentOptions.Center);
 
         feedbackExplanationTMP = CreateText(contentRoot.transform, "FeedbackExplanation_TMP",
-            new Vector3(0f, -1.48f, -0.01f), new Vector2(5.5f, 0.35f),
+            new Vector3(-0.85f, -1.56f, -0.01f), new Vector2(3.7f, 0.32f),
             "", 0.32f, FontStyles.Normal,
             new Color(0.88f, 0.92f, 0.98f), TextAlignmentOptions.Center);
         feedbackExplanationTMP.textWrappingMode = TextWrappingModes.Normal;
@@ -275,9 +279,9 @@ public class LiveChallengeController : MonoBehaviour
         controlBtnObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
         controlBtnObj.name = "Btn_QuizControl";
         controlBtnObj.transform.SetParent(contentRoot.transform, false);
-        controlBtnObj.transform.localPosition = new Vector3(0f, -1.45f, 0f);
+        controlBtnObj.transform.localPosition = new Vector3(1.9f, -1.42f, 0f);
         controlBtnObj.transform.localRotation = Quaternion.identity;
-        controlBtnObj.transform.localScale = new Vector3(3.20f, 0.26f, 0.03f);
+        controlBtnObj.transform.localScale = new Vector3(1.60f, 0.34f, 0.03f);
 
         controlBtnRenderer = controlBtnObj.GetComponent<Renderer>();
         Material ctrlMat = new Material(litShader) { color = new Color(0.10f, 0.45f, 0.75f) };
@@ -286,12 +290,19 @@ public class LiveChallengeController : MonoBehaviour
         controlBtnRenderer.sharedMaterial = ctrlMat;
 
         controlBtnTMP = CreateText(contentRoot.transform, "ControlBtnLabel_TMP",
-            new Vector3(0f, -1.45f, -0.025f), new Vector2(3.0f, 0.26f),
+            new Vector3(1.9f, -1.42f, -0.025f), new Vector2(1.5f, 0.30f),
             "START QUIZ", 0.38f, FontStyles.Bold,
             Color.white, TextAlignmentOptions.Center);
 
         controlInteractable = controlBtnObj.AddComponent<ControlInteractionButton>();
         controlInteractable.controller = this;
+    }
+
+    /// <summary>GRIDLOCK: the control button and its label (a separate object) show and hide together.</summary>
+    private void SetControlVisible(bool visible)
+    {
+        if (controlBtnObj != null) controlBtnObj.SetActive(visible);
+        if (controlBtnTMP != null) controlBtnTMP.gameObject.SetActive(visible);
     }
 
     private TextMeshPro CreateText(Transform parent, string name, Vector3 localPos, Vector2 sizeDelta,
@@ -348,7 +359,7 @@ public class LiveChallengeController : MonoBehaviour
             {
                 optionButtonObjs[i].SetActive(true);
                 if (optionTextTMPs[i] != null) optionTextTMPs[i].text = welcomeTopics[i];
-                SetButtonColor(optionRenderers[i], new Color(0.12f, 0.16f, 0.22f), false);
+                SetButtonColor(optionRenderers[i], OptionIdle, false);
             }
         }
 
@@ -356,7 +367,7 @@ public class LiveChallengeController : MonoBehaviour
         feedbackExplanationTMP.text = "";
 
         // Control button shows START QUIZ
-        controlBtnObj.SetActive(true);
+        SetControlVisible(true);
         controlBtnTMP.text = "START QUIZ ➔";
         controlInteractable.actionPrompt = "Press [E] or Click to START QUIZ";
         SetButtonColor(controlBtnRenderer, new Color(0.12f, 0.55f, 0.85f), true);
@@ -446,7 +457,7 @@ public class LiveChallengeController : MonoBehaviour
             optionTextTMPs[i].color = Color.white;
 
             // Reset idle material
-            SetButtonColor(optionRenderers[i], new Color(0.12f, 0.17f, 0.24f), false);
+            SetButtonColor(optionRenderers[i], OptionIdle, false);
 
             optionInteractables[i].actionPrompt = $"Press [E] or Click: {label}";
         }
@@ -456,7 +467,7 @@ public class LiveChallengeController : MonoBehaviour
         feedbackExplanationTMP.text = "";
 
         // Hide control button during active answering
-        controlBtnObj.SetActive(false);
+        SetControlVisible(false);
     }
 
     /// <summary>
@@ -574,7 +585,7 @@ public class LiveChallengeController : MonoBehaviour
         OnChallengeAnswered?.Invoke(isCorrect);
 
         // Show Next Question button
-        controlBtnObj.SetActive(true);
+        SetControlVisible(true);
         bool isLastQuestion = CurrentQuestionIndex >= questionBank.Count - 1;
         controlBtnTMP.text = isLastQuestion ? "VIEW FINAL RESULTS ➔" : "NEXT QUESTION ➔";
         controlInteractable.actionPrompt = isLastQuestion ? "Press [E] or Click to View Final Results" : "Press [E] or Click for Next Question";
@@ -635,7 +646,7 @@ public class LiveChallengeController : MonoBehaviour
         feedbackExplanationTMP.text = "You can replay this quiz anytime from this wall station to improve your score.";
 
         // Control button shows RETRY QUIZ
-        controlBtnObj.SetActive(true);
+        SetControlVisible(true);
         controlBtnTMP.text = "↺ RETRY QUIZ";
         controlInteractable.actionPrompt = "Press [E] or Click to RETRY QUIZ";
         SetButtonColor(controlBtnRenderer, new Color(0.20f, 0.65f, 0.40f), true);

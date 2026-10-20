@@ -36,11 +36,15 @@ namespace Gridlock.UI
 
         void OnEnable() => Refresh();
 
+        /// <summary>Post effects are always off on the Quest (frame rate): the row shows OFF and cannot be changed.</summary>
+        bool Locked => setting == Setting.PostEffects && Gridlock.XR.QuestPerformance.IsStandaloneHeadset;
+
         public void Refresh()
         {
-            float current = GameSettings.Get(setting);
+            float current = Locked ? 0f : GameSettings.Get(setting);
             for (int i = 0; i < options.Length; i++)
             {
+                options[i].interactable = !Locked;
                 bool on = Mathf.Approximately(values[i], current);
                 options[i].image.color = on ? On : Off;
                 var label = options[i].GetComponentInChildren<TMP_Text>();

@@ -20,6 +20,21 @@ public class BoxResetManager : MonoBehaviour
     [SerializeField] private float resetDelay = 0.5f;
 
     private bool isResetting;
+    private bool externallyManaged;
+
+    /// <summary>
+    /// GRIDLOCK's placement manager owns page-box state. The imported algorithm buttons still reference this legacy
+    /// reset component, so without this switch its delayed reset could pull a just-placed resident page back to a shelf.
+    /// </summary>
+    public void SetExternallyManaged(bool value)
+    {
+        externallyManaged = value;
+        if (value && isResetting)
+        {
+            StopAllCoroutines();
+            isResetting = false;
+        }
+    }
 
     private void Awake()
     {
@@ -40,6 +55,9 @@ public class BoxResetManager : MonoBehaviour
 
     public void ResetBoxes()
     {
+        if (externallyManaged)
+            return;
+
         if (!isResetting)
             StartCoroutine(ResetBoxesRoutine());
     }

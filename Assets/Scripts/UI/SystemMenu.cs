@@ -9,6 +9,7 @@ using UnityEngine.Rendering;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Hands;
+using UnityEngine.XR.Interaction.Toolkit.Interactors.Casters;
 
 namespace Gridlock.UI
 {
@@ -36,6 +37,18 @@ namespace Gridlock.UI
         float savedTimeScale = 1f;
         bool handMenuWasPressed;
         GameObject openView;
+        float lastToggle = float.NegativeInfinity;
+        readonly List<(CurveInteractionCaster caster, LayerMask mask)> blockedRays =
+            new List<(CurveInteractionCaster, LayerMask)>();
+
+        /// <summary>
+        /// One press can arrive twice: on Quest the left ≡ button also reaches Android as Back (Esc), and the hand menu
+        /// gesture can come with it. Toggles closer together than this are one press.
+        /// </summary>
+        const float ToggleDebounce = 0.3f;
+
+        /// <summary>Above every world canvas in the scenes (they use 0–100).</summary>
+        const int OnTopSortingOrder = 1000;
 
         public static SystemMenu Instance { get; private set; }
 
@@ -77,10 +90,14 @@ namespace Gridlock.UI
 
         /// <summary>
         /// In a headset the menu must never hide inside the scene (the hub's monitor sits within arm's reach), so its UI
-        /// ignores the depth buffer: UI and TMP shaders read their ZTest from unity_GUIZTestMode.
+        /// ignores the depth buffer: UI and TMP shaders read their ZTest from unity_GUIZTestMode. UI writes no depth either,
+        /// so the menu must also draw last: otherwise a world canvas drawn after it (the hub monitor) paints over it.
         /// </summary>
         static void DrawOnTop(GameObject root)
         {
+            foreach (var canvas in root.GetComponentsInChildren<Canvas>(true))
+                if (canvas.transform == root.transform || canvas.overrideSorting) canvas.sortingOrder = Mathf.Max(canvas.sortingOrder, OnTopSortingOrder);
+
             var copies = new Dictionary<Material, Material>();
             Material OnTop(Material source)
             {
@@ -89,6 +106,7 @@ namespace Gridlock.UI
                 {
                     copy = new Material(source) { name = source.name + " (on top)" };
                     copy.SetFloat("unity_GUIZTestMode", (float)CompareFunction.Always);
+                    copy.renderQueue = (int)RenderQueue.Overlay;
                     copies[source] = copy;
                 }
                 return copy;
@@ -104,6 +122,7 @@ namespace Gridlock.UI
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            RaysIgnoreScene(false);
             if (IsOpen) Unpause();
         }
 
@@ -122,6 +141,8 @@ namespace Gridlock.UI
 
         public void Toggle()
         {
+            if (Time.unscaledTime - lastToggle < ToggleDebounce) return;
+            lastToggle = Time.unscaledTime;
             if (IsOpen) Close();
             else Open();
         }
@@ -135,7 +156,11 @@ namespace Gridlock.UI
 
             bool xr = mode != null && mode.XRActive;
             openView = xr ? xrView : desktopView;
-            if (xr) PlaceInFrontOfPlayer(openView.transform);
+            if (xr)
+            {
+                PlaceInFrontOfPlayer(openView.transform);
+                RaysIgnoreScene(true);
+            }
             openView.SetActive(true);
             Play(openClip);
         }
@@ -145,6 +170,7 @@ namespace Gridlock.UI
             if (!IsOpen) return;
             openView.SetActive(false);
             openView = null;
+            RaysIgnoreScene(false);
             Unpause();
             Play(closeClip);
         }
@@ -156,25 +182,28 @@ namespace Gridlock.UI
         public void Home()
         {
             Close();
-            Time.timeScale = 1f;
+            EnsureGameplayResumed();
             SceneManager.LoadScene(homeScene);
         }
 
         public void Restart()
         {
             Close();
+            EnsureGameplayResumed();
             restart.Invoke();
         }
 
         public void ReplayTour()
         {
             Close();
+            EnsureGameplayResumed();
             if (tour != null) tour.Replay();
         }
 
         public void Quit()
         {
             Close();
+            EnsureGameplayResumed();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -182,9 +211,36 @@ namespace Gridlock.UI
 #endif
         }
 
+        /// <summary>
+        /// While the menu is open the controller and hand rays see only UI: the menu floats within arm's reach, often in
+        /// front of a desk, a monitor or a podium whose colliders would otherwise catch the ray first (and their buttons
+        /// would take the trigger).
+        /// </summary>
+        void RaysIgnoreScene(bool ignore)
+        {
+            if (ignore)
+            {
+                foreach (var caster in FindObjectsByType<CurveInteractionCaster>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    blockedRays.Add((caster, caster.raycastMask));
+                    caster.raycastMask = 0;
+                }
+                return;
+            }
+            foreach (var (caster, mask) in blockedRays)
+                if (caster != null) caster.raycastMask = mask;
+            blockedRays.Clear();
+        }
+
         void Unpause()
         {
-            Time.timeScale = savedTimeScale;
+            EnsureGameplayResumed(savedTimeScale);
+        }
+
+        /// <summary>Every menu route must leave the next scene / interaction in a live state.</summary>
+        static void EnsureGameplayResumed(float timeScale = 1f)
+        {
+            Time.timeScale = timeScale > 0f ? timeScale : 1f;
             AudioListener.pause = false;
         }
 

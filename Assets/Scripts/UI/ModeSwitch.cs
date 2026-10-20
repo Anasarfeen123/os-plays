@@ -15,6 +15,7 @@ namespace Gridlock.UI
         void Awake() => GetComponent<Button>().onClick.AddListener(() =>
         {
             Time.timeScale = 1f;
+            AudioListener.pause = false;
             SceneManager.LoadScene(sceneName);
         });
     }
