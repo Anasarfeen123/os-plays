@@ -98,7 +98,7 @@ public class PhysicalLabTutorialGuide : MonoBehaviour
         steps.Add(new TutorialStep(
             "1. Choose an Algorithm Station",
             "Select Algorithm",
-            "Walk up to any of the 4 workstation desks in the lab (FCFS, SRTF, PRIORITY, or ROUND ROBIN) and look at the desk to press [E] to activate that algorithm.",
+            "Walk up to any of the 4 workstation desks in the lab (FCFS, SRTF, PRIORITY, or ROUND ROBIN) and select the desk (point and pull the trigger, or look at it and press E) to activate that algorithm.",
             "Tip: Each station configures the arena with unique preemption and queue rules."
         ));
 
@@ -241,7 +241,7 @@ public class PhysicalLabTutorialGuide : MonoBehaviour
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             for (int i = 0; i < steps.Count; i++)
             {
-                string check = steps[i].isCompleted ? "<color=#22C55E>✓</color>" : "<color=#64748B>○</color>";
+                string check = steps[i].isCompleted ? "<color=#22C55E>●</color>" : "<color=#64748B>○</color>";
                 string highlight = (i == currentStepIndex) ? "<b><color=#38BDF8>" : "<color=#94A3B8>";
                 string endHighlight = (i == currentStepIndex) ? "</color></b>" : "</color>";
                 sb.AppendLine($"{check} {highlight}{steps[i].shortName}{endHighlight}");

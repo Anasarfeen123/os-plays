@@ -383,7 +383,7 @@ public class TutorialUIController : MonoBehaviour
             if (quizFeedbackBg != null) quizFeedbackBg.color = new Color(0.12f, 0.40f, 0.22f, 0.98f);
             if (quizFeedbackTitle != null)
             {
-                quizFeedbackTitle.text = "CORRECT ANSWER! 🎉";
+                quizFeedbackTitle.text = "CORRECT ANSWER!";
                 quizFeedbackTitle.color = new Color(0.35f, 0.95f, 0.5f);
             }
             if (quizFeedbackText != null)
@@ -396,7 +396,7 @@ public class TutorialUIController : MonoBehaviour
             if (quizFeedbackBg != null) quizFeedbackBg.color = new Color(0.45f, 0.15f, 0.18f, 0.98f);
             if (quizFeedbackTitle != null)
             {
-                quizFeedbackTitle.text = "NOT QUITE — TRY AGAIN ❌";
+                quizFeedbackTitle.text = "NOT QUITE — TRY AGAIN";
                 quizFeedbackTitle.color = new Color(1.0f, 0.45f, 0.45f);
             }
             if (quizFeedbackText != null)

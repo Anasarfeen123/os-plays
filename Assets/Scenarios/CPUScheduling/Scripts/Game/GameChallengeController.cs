@@ -23,7 +23,7 @@ public class GameChallengeController : MonoBehaviour
 
     [Header("Result Modal UI")]
     public GameObject resultModal; // root modal panel (inactive by default)
-    public Text resultBannerText; // e.g. "CORRECT! 🎉" or "INCORRECT"
+    public Text resultBannerText; // e.g. "CORRECT!" or "INCORRECT"
     public Text resultScoreText; // earned XP info
     public Text resultYourSeqText; // player sequence
     public Text resultExpectedSeqText; // ground‑truth sequence
@@ -50,7 +50,7 @@ public class GameChallengeController : MonoBehaviour
         if (_timerRunning)
         {
             _elapsedTime += Time.deltaTime;
-            timerText.text = $"⏱️ TIME: {_elapsedTime:0.0}s";
+            timerText.text = $"TIME: {_elapsedTime:0.0}s";
         }
     }
 
@@ -80,7 +80,7 @@ public class GameChallengeController : MonoBehaviour
         _currentChallenge = challenge;
         _selectedOption = null;
         _elapsedTime = 0f;
-        timerText.text = "⏱️ TIME: 0.0s";
+        timerText.text = "TIME: 0.0s";
         _timerRunning = true;
         // Populate UI fields
         titleText.text = challenge.Title;
@@ -136,7 +136,7 @@ public class GameChallengeController : MonoBehaviour
     private void ShowResult(ChallengeResultReport report)
     {
         resultModal.SetActive(true);
-        resultBannerText.text = report.IsCorrect ? "CORRECT! 🎉" : "INCORRECT 😕";
+        resultBannerText.text = report.IsCorrect ? "CORRECT!" : "INCORRECT";
         resultScoreText.text = $"EARNED SCORE: +{report.ScoreEarned} XP (Base: {report.BaseXPEarned} XP + Time Bonus: {report.TimeBonusEarned} XP)";
         resultYourSeqText.text = $"YOUR ORDER: {report.SelectedSequence}";
         resultExpectedSeqText.text = $"EXPECTED ORDER: {report.ExpectedSequence}";

@@ -109,7 +109,7 @@ public class GameUIController : MonoBehaviour
         {
             float elapsed = Time.time - challengeStartTime;
             int bonus = Mathf.Max(0, Mathf.RoundToInt((30f - elapsed) * 5f));
-            timerText.text = $"⏱️ TIME: {elapsed:F1}s  |  TIME BONUS: +{bonus} XP";
+            timerText.text = $"TIME: {elapsed:F1}s  |  TIME BONUS: +{bonus} XP";
         }
     }
 
@@ -174,7 +174,7 @@ public class GameUIController : MonoBehaviour
             var txt = btnObj.GetComponentInChildren<Text>();
             if (txt != null)
             {
-                string status = ch.IsCompleted ? "✅ " : "⚪ ";
+                string status = ch.IsCompleted ? "● " : "○ ";
                 txt.text = $"{status}[{ch.Difficulty}] {ch.Title}";
             }
 
@@ -331,7 +331,7 @@ public class GameUIController : MonoBehaviour
             if (resultBannerBg != null) resultBannerBg.color = new Color(0.10f, 0.38f, 0.20f, 0.98f);
             if (resultBannerTitle != null)
             {
-                resultBannerTitle.text = "CORRECT SCHEDULE! DISPATCH MASTER 🎉";
+                resultBannerTitle.text = "CORRECT SCHEDULE! DISPATCH MASTER";
                 resultBannerTitle.color = new Color(0.35f, 0.95f, 0.5f);
             }
             if (scoreBreakdownText != null)
@@ -344,7 +344,7 @@ public class GameUIController : MonoBehaviour
             if (resultBannerBg != null) resultBannerBg.color = new Color(0.45f, 0.15f, 0.18f, 0.98f);
             if (resultBannerTitle != null)
             {
-                resultBannerTitle.text = "LEARNING OPPORTUNITY 💡";
+                resultBannerTitle.text = "LEARNING OPPORTUNITY";
                 resultBannerTitle.color = new Color(1.0f, 0.45f, 0.45f);
             }
             if (scoreBreakdownText != null)
@@ -369,7 +369,7 @@ public class GameUIController : MonoBehaviour
             if (report.NewlyUnlockedAchievements.Count > 0)
             {
                 var ach = report.NewlyUnlockedAchievements[0];
-                achievementNoticeText.text = $"🏆 UNLOCKED ACHIEVEMENT: {ach.IconEmoji} {ach.Title} — {ach.Description}";
+                achievementNoticeText.text = $"UNLOCKED ACHIEVEMENT: {ach.Title} — {ach.Description}";
                 achievementNoticeText.gameObject.SetActive(true);
             }
             else

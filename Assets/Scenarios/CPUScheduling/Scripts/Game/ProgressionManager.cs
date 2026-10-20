@@ -19,12 +19,12 @@ public class ProgressionManager : MonoBehaviour
     {
         get
         {
-            if (Level >= 10) return "👑 CPU Scheduling Grandmaster";
-            if (Level >= 7) return "⚡ OS Kernel Architect";
-            if (Level >= 5) return "⚙️ Process Dispatcher";
-            if (Level >= 3) return "⏱️ Interrupt Specialist";
-            if (Level >= 2) return "💻 Kernel Apprentice";
-            return "🌱 Scheduling Novice";
+            if (Level >= 10) return "CPU Scheduling Grandmaster";
+            if (Level >= 7) return "OS Kernel Architect";
+            if (Level >= 5) return "Process Dispatcher";
+            if (Level >= 3) return "Interrupt Specialist";
+            if (Level >= 2) return "Kernel Apprentice";
+            return "Scheduling Novice";
         }
     }
 
@@ -59,15 +59,15 @@ public class ProgressionManager : MonoBehaviour
     {
         Achievements = new List<Achievement>
         {
-            new Achievement("first_dispatch", "First Dispatch", "Successfully solve your first scheduling challenge.", "🚀"),
-            new Achievement("fcfs_master", "FIFO Champion", "Master First-Come First-Served scheduling without errors.", "📦"),
-            new Achievement("sjf_prodigy", "Greedy Optimizer", "Accurately predict Shortest Job First execution.", "⚡"),
-            new Achievement("preemption_master", "Preemption Prodigy", "Master Shortest Remaining Time First (SRTF) preemption.", "⚔️"),
-            new Achievement("priority_commander", "Priority Commander", "Resolve a high-priority interrupt challenge.", "🎖️"),
-            new Achievement("rr_time_sharer", "Quantum Time-Sharer", "Solve a Round Robin time-slice challenge.", "🔄"),
-            new Achievement("mlfq_architect", "Feedback Architect", "Solve an Expert Multilevel Feedback Queue scenario.", "🏗️"),
-            new Achievement("speed_demon", "Speed Demon", "Solve a scheduling challenge in under 10 seconds.", "⏱️"),
-            new Achievement("grandmaster", "Grandmaster Scheduler", "Reach Level 5 and earn over 1,000 XP.", "🏆")
+            new Achievement("first_dispatch", "First Dispatch", "Successfully solve your first scheduling challenge.", ""),
+            new Achievement("fcfs_master", "FIFO Champion", "Master First-Come First-Served scheduling without errors.", ""),
+            new Achievement("sjf_prodigy", "Greedy Optimizer", "Accurately predict Shortest Job First execution.", ""),
+            new Achievement("preemption_master", "Preemption Prodigy", "Master Shortest Remaining Time First (SRTF) preemption.", ""),
+            new Achievement("priority_commander", "Priority Commander", "Resolve a high-priority interrupt challenge.", ""),
+            new Achievement("rr_time_sharer", "Quantum Time-Sharer", "Solve a Round Robin time-slice challenge.", ""),
+            new Achievement("mlfq_architect", "Feedback Architect", "Solve an Expert Multilevel Feedback Queue scenario.", ""),
+            new Achievement("speed_demon", "Speed Demon", "Solve a scheduling challenge in under 10 seconds.", ""),
+            new Achievement("grandmaster", "Grandmaster Scheduler", "Reach Level 5 and earn over 1,000 XP.", "")
         };
     }
 

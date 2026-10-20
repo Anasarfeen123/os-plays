@@ -127,7 +127,7 @@ public class PhysicalArenaManager : MonoBehaviour
                 tmp.fontStyle = FontStyles.Bold;
                 var rt = tmp.GetComponent<RectTransform>();
                 if (rt != null) rt.sizeDelta = new Vector2(2.5f, 0.5f);
-                tmp.transform.localPosition = new Vector3(0, 1.35f, 0.05f);
+                tmp.transform.localPosition = new Vector3(0, 1.65f, 0.05f); // GRIDLOCK: title and description clear of the monitor
             }
             else if (n == "StationInfo_TMP")
             {
@@ -136,7 +136,7 @@ public class PhysicalArenaManager : MonoBehaviour
                 tmp.fontStyle = FontStyles.Normal;
                 var rt = tmp.GetComponent<RectTransform>();
                 if (rt != null) rt.sizeDelta = new Vector2(2.5f, 0.5f);
-                tmp.transform.localPosition = new Vector3(0, -0.22f, 0);
+                tmp.transform.localPosition = new Vector3(0, -0.34f, 0); // GRIDLOCK: clear of the title's card
             }
             else if (n == "CPU_Status_TMP")
             {
@@ -665,7 +665,7 @@ public class PhysicalArenaManager : MonoBehaviour
             {
                 GameObject labelObj = new GameObject("StationLabel_TMP");
                 labelObj.transform.SetParent(wsObj.transform, false);
-                labelObj.transform.localPosition = new Vector3(0, 1.35f, 0.05f);
+                labelObj.transform.localPosition = new Vector3(0, 1.65f, 0.05f); // GRIDLOCK: title and description clear of the monitor
                 labelObj.AddComponent<Billboard3D>();
 
                 titleTMP = labelObj.AddComponent<TextMeshPro>();
@@ -679,7 +679,7 @@ public class PhysicalArenaManager : MonoBehaviour
 
                 GameObject infoObj = new GameObject("StationInfo_TMP");
                 infoObj.transform.SetParent(labelObj.transform, false);
-                infoObj.transform.localPosition = new Vector3(0, -0.22f, 0);
+                infoObj.transform.localPosition = new Vector3(0, -0.34f, 0); // GRIDLOCK: clear of the title's card
 
                 infoTMP = infoObj.AddComponent<TextMeshPro>();
                 infoTMP.text = data.desc;
@@ -692,7 +692,7 @@ public class PhysicalArenaManager : MonoBehaviour
             }
             else
             {
-                existingLabel.localPosition = new Vector3(0, 1.35f, 0.05f);
+                existingLabel.localPosition = new Vector3(0, 1.65f, 0.05f); // GRIDLOCK: title and description clear of the monitor
                 titleTMP = existingLabel.GetComponent<TextMeshPro>();
                 if (titleTMP != null)
                 {
@@ -703,7 +703,7 @@ public class PhysicalArenaManager : MonoBehaviour
                 var infoChild = existingLabel.Find("StationInfo_TMP");
                 if (infoChild != null)
                 {
-                    infoChild.localPosition = new Vector3(0, -0.22f, 0);
+                    infoChild.localPosition = new Vector3(0, -0.34f, 0); // GRIDLOCK: clear of the title's card
                     infoTMP = infoChild.GetComponent<TextMeshPro>();
                     if (infoTMP != null)
                     {

@@ -339,11 +339,11 @@ public class LiveChallengeController : MonoBehaviour
         titleTMP.text = "CPU SCHEDULING CHALLENGE STATION";
         titleTMP.color = new Color(0.0f, 0.90f, 1.0f);
 
-        statusTMP.text = $"STAND HERE AND PRESS [E] TO INTERACT • TOTAL QUESTIONS: {questionBank.Count}";
+        statusTMP.text = $"SELECT AN ANSWER TO PLAY • TOTAL QUESTIONS: {questionBank.Count}";
         categoryTMP.text = "[ INTERACTIVE CPU SCHEDULING LAB ]";
         categoryTMP.color = new Color(0.35f, 0.85f, 1.0f);
 
-        questionTMP.text = "Test your mastery of CPU Scheduling Algorithms!\nTopics: FCFS, SRTF, Priority, Round Robin, Metrics & Idle Time.\nWalk up to the wall and press [E] on an answer to submit.";
+        questionTMP.text = "Test your mastery of CPU Scheduling Algorithms!\nTopics: FCFS, SRTF, Priority, Round Robin, Metrics & Idle Time.\nPoint at an answer (or look at it and press E) to submit.";
         processTableTMP.text = "Four options (A, B, C, D) are presented with instant feedback and calculation explanations.";
 
         // Keep option buttons active on welcome screen showing topic overview
@@ -368,7 +368,7 @@ public class LiveChallengeController : MonoBehaviour
 
         // Control button shows START QUIZ
         SetControlVisible(true);
-        controlBtnTMP.text = "START QUIZ ➔";
+        controlBtnTMP.text = "START QUIZ  →";
         controlInteractable.actionPrompt = "Press [E] or Click to START QUIZ";
         SetButtonColor(controlBtnRenderer, new Color(0.12f, 0.55f, 0.85f), true);
     }
@@ -545,7 +545,7 @@ public class LiveChallengeController : MonoBehaviour
             SetButtonColor(optionRenderers[optionIndex], new Color(0.08f, 0.75f, 0.35f), true);
             optionTextTMPs[optionIndex].color = Color.white;
 
-            feedbackTitleTMP.text = $"CORRECT! 🎉  (+{xpEarned} XP)";
+            feedbackTitleTMP.text = $"CORRECT!  (+{xpEarned} XP)";
             feedbackTitleTMP.color = new Color(0.15f, 0.95f, 0.45f);
 
             string explanation = !string.IsNullOrEmpty(selectedOption.Feedback)
@@ -565,10 +565,10 @@ public class LiveChallengeController : MonoBehaviour
             {
                 SetButtonColor(optionRenderers[correctIndex], new Color(0.15f, 0.70f, 0.35f), true);
                 char correctLetter = (char)('A' + correctIndex);
-                optionTextTMPs[correctIndex].text += "  ✔ [CORRECT ANSWER]";
+                optionTextTMPs[correctIndex].text += "   ● CORRECT ANSWER";
             }
 
-            feedbackTitleTMP.text = "INCORRECT ❌";
+            feedbackTitleTMP.text = "INCORRECT";
             feedbackTitleTMP.color = new Color(0.95f, 0.30f, 0.30f);
 
             char correctLetterChar = correctIndex >= 0 ? (char)('A' + correctIndex) : '?';
@@ -587,7 +587,7 @@ public class LiveChallengeController : MonoBehaviour
         // Show Next Question button
         SetControlVisible(true);
         bool isLastQuestion = CurrentQuestionIndex >= questionBank.Count - 1;
-        controlBtnTMP.text = isLastQuestion ? "VIEW FINAL RESULTS ➔" : "NEXT QUESTION ➔";
+        controlBtnTMP.text = isLastQuestion ? "VIEW FINAL RESULTS  →" : "NEXT QUESTION  →";
         controlInteractable.actionPrompt = isLastQuestion ? "Press [E] or Click to View Final Results" : "Press [E] or Click for Next Question";
         SetButtonColor(controlBtnRenderer, new Color(0.15f, 0.55f, 0.85f), true);
     }
@@ -616,7 +616,7 @@ public class LiveChallengeController : MonoBehaviour
         CurrentState = QuizState.Completed;
         answerLocked = true;
 
-        titleTMP.text = "🏆 QUIZ COMPLETED!";
+        titleTMP.text = "QUIZ COMPLETED!";
         titleTMP.color = new Color(1.0f, 0.85f, 0.20f);
 
         int total = TotalQuestionsAnswered > 0 ? TotalQuestionsAnswered : questionBank.Count;
@@ -624,15 +624,15 @@ public class LiveChallengeController : MonoBehaviour
 
         statusTMP.text = $"FINAL SCORE: {CorrectAnswersCount} / {total} CORRECT ({percent:0}%)  •  TOTAL XP: +{ScoreXP}";
 
-        string rankBadge = "🌱 Scheduling Novice";
-        if (percent >= 90f) rankBadge = "👑 CPU Scheduling Grandmaster";
-        else if (percent >= 75f) rankBadge = "⚡ OS Kernel Architect";
-        else if (percent >= 50f) rankBadge = "⚙️ Process Dispatcher";
+        string rankBadge = "Scheduling Novice";
+        if (percent >= 90f) rankBadge = "CPU Scheduling Grandmaster";
+        else if (percent >= 75f) rankBadge = "OS Kernel Architect";
+        else if (percent >= 50f) rankBadge = "Process Dispatcher";
 
         categoryTMP.text = $"AWARDED RANK: {rankBadge}";
         categoryTMP.color = new Color(0.2f, 0.9f, 0.5f);
 
-        questionTMP.text = $"Outstanding effort! You completed all CPU Scheduling challenges.\nYour final accuracy is {percent:0}% with {ScoreXP} XP earned.\nPress [E] below to restart the quiz and practice again!";
+        questionTMP.text = $"Outstanding effort! You completed all CPU Scheduling challenges.\nYour final accuracy is {percent:0}% with {ScoreXP} XP earned.\nChoose RETRY QUIZ below to practise again!";
         processTableTMP.text = "";
 
         // Hide option buttons
@@ -647,7 +647,7 @@ public class LiveChallengeController : MonoBehaviour
 
         // Control button shows RETRY QUIZ
         SetControlVisible(true);
-        controlBtnTMP.text = "↺ RETRY QUIZ";
+        controlBtnTMP.text = "RETRY QUIZ";
         controlInteractable.actionPrompt = "Press [E] or Click to RETRY QUIZ";
         SetButtonColor(controlBtnRenderer, new Color(0.20f, 0.65f, 0.40f), true);
     }

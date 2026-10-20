@@ -15,6 +15,9 @@ public class WelcomeSequenceController : MonoBehaviour
 
     private bool sequenceStarted;
 
+    /// <summary>GRIDLOCK: the welcome panel is up (other floating cards keep clear of it and its Continue button).</summary>
+    public bool WelcomeShowing => welcomePanel != null && welcomePanel.activeInHierarchy;
+
     public void StartTutorialSequence()
     {
         if (sequenceStarted)
