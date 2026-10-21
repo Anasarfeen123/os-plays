@@ -48,6 +48,7 @@ namespace Gridlock.AR
         [SerializeField] TMP_Text planesLabel;
         [Tooltip("The model's own help line, used when the scene's HUD has none.")]
         [SerializeField] TMP_Text helpLine;
+        [SerializeField] ARTapPulse tapPulse;
 
         /// <summary>
         /// Taps on things outside GRIDLOCK's assembly (the imported scenarios' [E] objects): each handler gets the hit
@@ -80,6 +81,14 @@ namespace Gridlock.AR
         /// <summary>Seconds the model takes to grow into place.</summary>
         const float PopSeconds = 0.5f;
 
+        // Hold to focus: the model grows around the held spot; holding again shows it all.
+        const float HoldSeconds = 0.5f, FocusZoom = 2.5f, FocusSeconds = 0.5f;
+        bool focused;
+        float focusAmount;            // 0 = whole model, 1 = zoomed in on the spot
+        Vector3 focusPivot;           // the spot (at floor height) that sits on the anchor when zoomed in
+        float pressStarted;
+        bool held;                    // this touch already acted as a hold
+
         // gesture state
         bool dragging;
         Vector2 dragStart;
@@ -110,6 +119,11 @@ namespace Gridlock.AR
             helpLine = help;
             settings = diorama;
         }
+
+        /// <summary>The ring that flashes under a tapped thing.</summary>
+        public void SetTapPulse(ARTapPulse pulse) => tapPulse = pulse;
+
+        public bool Focused => focused;
 
         /// <summary>Forget the shared session and the last spot (tests start each scene fresh).</summary>
         public static void ForgetPlacement()
@@ -230,7 +244,11 @@ namespace Gridlock.AR
                     break;
                 case Stage.Placed:
                     Gestures();
-                    if (Time.unscaledTime - placedAt < PopSeconds + 0.1f) Apply(); // still growing into place
+                    bool popping = Time.unscaledTime - placedAt < PopSeconds + 0.1f; // still growing into place
+                    float focusTarget = focused ? 1f : 0f;
+                    bool focusing = !Mathf.Approximately(focusAmount, focusTarget);
+                    focusAmount = Mathf.MoveTowards(focusAmount, focusTarget, Time.unscaledDeltaTime / FocusSeconds);
+                    if (popping || focusing) Apply();
                     break;
             }
         }
@@ -278,11 +296,14 @@ namespace Gridlock.AR
             planesButton.gameObject.SetActive(true);
             SetPlanesVisible(false);
             placedAt = Time.unscaledTime;
+            focused = false;
+            focusAmount = 0f;
             Apply();
             RememberSpot();
             UpdateCutaway(force: true);
             Hint(settings.placedHint);
             ScenePlacement.Ready = true;
+            ARHaptics.Success();
         }
 
         /// <summary>World metres per real metre (bigger = smaller model), kept within the allowed range.</summary>
@@ -316,8 +337,10 @@ namespace Gridlock.AR
             // target shows it smaller).
             float k = Mathf.Clamp01((Time.unscaledTime - placedAt) / PopSeconds);
             float grow = 1f + 2.70158f * Mathf.Pow(k - 1f, 3f) + 1.70158f * Mathf.Pow(k - 1f, 2f); // ease-out-back, 0 → 1
-            float shown = scale / Mathf.Lerp(0.35f, 1f, grow);
-            var (position, rotation) = ARPlacementMath.OriginFor(contentPivot.position, anchor, yaw, shown);
+            float f = focusAmount * focusAmount * (3f - 2f * focusAmount);
+            float shown = scale / Mathf.Lerp(0.35f, 1f, grow) / Mathf.Lerp(1f, FocusZoom, f);
+            var pivot = Vector3.Lerp(contentPivot.position, focusPivot, f);
+            var (position, rotation) = ARPlacementMath.OriginFor(pivot, anchor, yaw, shown);
             origin.transform.SetPositionAndRotation(position, rotation);
             origin.transform.localScale = Vector3.one * shown;
             if (scaleLabel != null) scaleLabel.text = $"1 : {Mathf.RoundToInt(scale)}";
@@ -360,8 +383,21 @@ namespace Gridlock.AR
             if (touches.Count == 1)
             {
                 var t = touches[0];
-                if (t.phase == UnityEngine.InputSystem.TouchPhase.Began) { dragStart = t.screenPosition; dragging = false; }
+                if (t.phase == UnityEngine.InputSystem.TouchPhase.Began)
+                {
+                    dragStart = t.screenPosition;
+                    dragging = false;
+                    held = false;
+                    pressStarted = Time.unscaledTime;
+                }
                 if (!dragging && Vector2.Distance(t.screenPosition, dragStart) > Screen.height * 0.03f && !OverUI(t.screenPosition)) dragging = true;
+                if (!dragging && !held && Time.unscaledTime - pressStarted > HoldSeconds && !OverUI(t.screenPosition))
+                {
+                    held = true;
+                    if (focused) Unfocus();
+                    else FocusAt(t.screenPosition);
+                }
+                if (held) return; // a hold is not also a tap
                 if (dragging && raycasts != null && raycasts.Raycast(t.screenPosition, hits, TrackableType.PlaneWithinPolygon))
                 {
                     anchor = hits[0].sessionRelativePose.position;
@@ -375,6 +411,41 @@ namespace Gridlock.AR
             // Mouse in the editor / desktop testing.
             var mouse = Mouse.current;
             if (mouse != null && mouse.leftButton.wasPressedThisFrame && !OverUI(mouse.position.ReadValue())) TapAt(mouse.position.ReadValue());
+        }
+
+        /// <summary>Zoom in around the spot of the model under this screen point (a hold on the screen).</summary>
+        public bool FocusAt(Vector2 screen)
+        {
+            if (!Placed || !ModelPoint(screen, out var point)) return false;
+            focusPivot = new Vector3(point.x, contentPivot.position.y, point.z); // the floor stays on the table
+            focused = true;
+            Hint("Zoomed in on that spot · hold again to see it all");
+            ARHaptics.Success();
+            return true;
+        }
+
+        /// <summary>Back to the whole model.</summary>
+        public void Unfocus()
+        {
+            if (!focused) return;
+            focused = false;
+            Hint(settings.placedHint);
+            ARHaptics.Tick();
+        }
+
+        /// <summary>The nearest visible, solid point of the model under a screen point.</summary>
+        bool ModelPoint(Vector2 screen, out Vector3 point)
+        {
+            int count = Physics.RaycastNonAlloc(arCamera.ScreenPointToRay(screen), tapHits, 5000f, ~0, QueryTriggerInteraction.Ignore);
+            Array.Sort(tapHits, 0, count, HitDistance.Instance);
+            for (int i = 0; i < count; i++)
+            {
+                if (!Tappable(tapHits[i].collider)) continue;
+                point = tapHits[i].point;
+                return true;
+            }
+            point = default;
+            return false;
         }
 
         /// <summary>
@@ -391,7 +462,12 @@ namespace Gridlock.AR
                 // Trigger volumes (a headset's drop zones) are invisible: only ones made for AR taps take them.
                 if (col.isTrigger && col.GetComponentInParent<IARTappable>() == null) continue;
                 if (!Tappable(col)) continue;
-                if (Use(col)) return true;
+                if (Use(col))
+                {
+                    ARHaptics.Tick();
+                    if (tapPulse != null) tapPulse.Play(col.bounds);
+                    return true;
+                }
                 if (!col.isTrigger) return false; // something solid in front of anything else
             }
             return false;

@@ -178,6 +178,7 @@ namespace Gridlock.Editor
             BuildSystemMenu(mode, DesktopCameraTransform(), "DEADLOCK DETECTION", isHome: false, tour, sim.Restart, DeadlockHowTo,
                             "BANKER MODE ►", BankerSceneName);
 
+            WireTeleportTargets();
             EditorSceneManager.SaveScene(scene, ScenePath);
             Debug.Log($"[GRIDLOCK] Built {ScenePath}");
         }
@@ -1308,6 +1309,30 @@ namespace Gridlock.Editor
             area.interactionLayers = InteractionLayerMask.GetMask("Teleport");
             area.filterSelectionByHitNormal = true; // floors only, never a wall or the gallery's edge
             area.upNormalToleranceDegrees = 35f;
+        }
+
+        /// <summary>
+        /// Every teleport target gets the rig's teleportation provider directly. Left to find it at runtime, a target that
+        /// woke before XRModeController switched the rig on drew its reticle against a provider with no mediator yet
+        /// (XRI NullReferenceException in GetReticleDirection for the first frames in the headset).
+        /// </summary>
+        static void WireTeleportTargets()
+        {
+            var provider = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationProvider>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault();
+            if (provider == null) return;
+            var mediator = provider.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionMediator>(true);
+            if (mediator != null && provider.mediator == null)
+            {
+                provider.mediator = mediator;
+                EditorUtility.SetDirty(provider);
+            }
+            foreach (var target in Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.BaseTeleportationInteractable>(
+                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                target.teleportationProvider = provider;
+                EditorUtility.SetDirty(target);
+            }
         }
 
         static Transform Marker(string name, Transform parent, Vector3 pos)

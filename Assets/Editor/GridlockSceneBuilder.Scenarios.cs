@@ -82,12 +82,13 @@ namespace Gridlock.Editor
             {
                 subject = "CPU lab",
                 placedHint = "Tap a desk to pick an algorithm, the console to run it",
-                helpText = "Tap desks, console and blocks    Pinch  resize    Twist  rotate    Drag  move",
+                helpText = "Tap desks, console and blocks    Pinch  resize    Twist  rotate    Drag  move    Hold  zoom in",
                 bounds = new Bounds(new Vector3(0f, 2f, 0f), new Vector3(21.6f, 5f, 21.6f)),
                 scale = 30f,
                 scaleRange = new Vector2(8f, 70f),
                 ceilingCut = 3.6f,
                 cutawayBand = 1.2f,
+                outdoorLight = false,
             }, new Rect(-10.25f, -10.25f, 20.5f, 20.5f), 0f, "CPU SCHEDULING LAB", new Color(0.66f, 0.33f, 0.97f), buttons,
                fillLight: 1.3f);
             BuildAudioSystems(null);
@@ -99,6 +100,7 @@ namespace Gridlock.Editor
                 .GetComponent<Renderer>().bounds;
             var corner = lab.center + new Vector3(-lab.extents.x * 0.8f, 2.3f, -lab.extents.z * 0.85f);
             RenderThumb(view, CpuThumbPath, corner, Quaternion.LookRotation(lab.center + Vector3.up * 0.6f - corner));
+            WireTeleportTargets();
             EditorSceneManager.SaveScene(scene, CpuScenePath);
             Debug.Log($"[GRIDLOCK] Built {CpuScenePath}");
         }
@@ -198,18 +200,20 @@ namespace Gridlock.Editor
             {
                 subject = "warehouse",
                 placedHint = "Tap a page box, then the pallet of a frame",
-                helpText = "Tap a box, then a pallet    Pinch  resize    Twist  rotate    Drag  move",
+                helpText = "Tap a box, then a pallet    Pinch  resize    Twist  rotate    Drag  move    Hold  zoom in",
                 bounds = new Bounds(new Vector3(8.1f, 3.3f, 5.4f), new Vector3(17.4f, 7.4f, 12f)),
                 scale = 24f,
                 scaleRange = new Vector2(6f, 60f),
                 ceilingCut = 6f,
                 cutawayBand = 1f,
+                outdoorLight = false,
             }, new Rect(-0.1f, -0.1f, 16.4f, 11f), 0f, "MEMORY WAREHOUSE", new Color(0.98f, 0.45f, 0.2f));
             BuildAudioSystems(null);
             var restart = glue.AddComponent<SceneRestart>();
             BuildSystemMenu(mode, player.transform, "MEMORY MANAGEMENT", isHome: false, tour: null, restart.Reload, MemoryHowTo);
 
             RenderThumb(view, MemoryThumbPath);
+            WireTeleportTargets();
             EditorSceneManager.SaveScene(scene, MemoryScenePath);
             Debug.Log($"[GRIDLOCK] Built {MemoryScenePath} (boxes {boxes.Count}, frames {zones.Length})");
         }

@@ -93,6 +93,7 @@ namespace Gridlock.Editor
             BuildSystemMenu(mode, DesktopCameraTransform(), "BANKER'S ALGORITHM", isHome: false, tour, game.RestartTutorial, BankerHowTo,
                             "◄ DEADLOCK MODE", DeadlockSceneName);
 
+            WireTeleportTargets();
             EditorSceneManager.SaveScene(scene, BankerScenePath);
             Debug.Log($"[GRIDLOCK] Built {BankerScenePath}");
         }

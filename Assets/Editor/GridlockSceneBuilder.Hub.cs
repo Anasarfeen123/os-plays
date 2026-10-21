@@ -101,18 +101,20 @@ namespace Gridlock.Editor
             {
                 subject = "control room",
                 placedHint = "Tap a card on the big screen, tap it again to enter",
-                helpText = "Tap a scenario card    Pinch  resize    Twist  rotate    Drag  move",
+                helpText = "Tap a scenario card    Pinch  resize    Twist  rotate    Drag  move    Hold  zoom in",
                 bounds = new Bounds(new Vector3(0f, 2.6f, 0f), new Vector3(18.4f, 6.2f, 16f)),
                 scale = 26f,
                 scaleRange = new Vector2(8f, 60f),
                 ceilingCut = 4.5f,
                 cutawayBand = 1f,
+                outdoorLight = false,
             }, new Rect(RoomMinX - 0.4f, RoomMinZ - 0.4f, RoomMaxX - RoomMinX + 0.8f, RoomMaxZ - RoomMinZ + 0.8f), 0f, "CONTROL ROOM", Cyan);
             var roamer = BuildDesktopRoamer(desktop, desktopInput);
             seat.Init(mode, origin, roamer, room.Find("Chair/StandPoint"));
             BuildAudioSystems("music_hub");
             BuildSystemMenu(mode, desktop, "CONTROL ROOM", isHome: true, tour: null, restart: null, HubHowTo);
 
+            WireTeleportTargets();
             EditorSceneManager.SaveScene(scene, HubScenePath);
             Debug.Log($"[GRIDLOCK] Built {HubScenePath}");
         }

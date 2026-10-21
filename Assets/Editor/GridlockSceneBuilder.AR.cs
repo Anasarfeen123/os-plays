@@ -107,6 +107,12 @@ namespace Gridlock.Editor
             var camData = cam.GetUniversalAdditionalCameraData();
             camData.renderPostProcessing = true;
             camData.antialiasing = AntialiasingMode.None;
+            // Real things in front of the model hide it (ARCore depth, on phones that have it; ARCameraBackground scales
+            // the real depth by the rig's scale).
+            var occlusion = camGo.AddComponent<AROcclusionManager>();
+            occlusion.requestedEnvironmentDepthMode = EnvironmentDepthMode.Medium;
+            occlusion.requestedOcclusionPreferenceMode = OcclusionPreferenceMode.PreferEnvironmentOcclusion;
+            occlusion.environmentDepthTemporalSmoothingRequested = true;
             var pose = camGo.AddComponent<TrackedPoseDriver>();
             pose.positionInput = new InputActionProperty(new InputAction("Position", binding: "<HandheldARInputDevice>/devicePosition"));
             pose.rotationInput = new InputActionProperty(new InputAction("Rotation", binding: "<HandheldARInputDevice>/deviceRotation"));
@@ -120,6 +126,7 @@ namespace Gridlock.Editor
             planes.planePrefab = PlanePrefab();
             planes.requestedDetectionMode = PlaneDetectionMode.Horizontal;
             var raycasts = originGo.AddComponent<ARRaycastManager>();
+            camGo.AddComponent<ARLightEstimation>().Init(camGo.GetComponent<ARCameraManager>(), originGo.transform, settings.outdoorLight);
 
             var pivot = Marker("AR Pivot", root.transform, pivotPosition);
             var reticle = Reticle(root.transform);
@@ -132,9 +139,24 @@ namespace Gridlock.Editor
             if (!string.IsNullOrEmpty(label)) NamePlate(plate, footprint, pivotPosition.y, thickness, label, labelColor ?? GuideCyan);
             plate.gameObject.SetActive(false);
 
+            // The ring that flashes under a tapped thing (a copy of the placement ring's material, faded out as it grows).
+            var pulse = new GameObject("Tap Pulse").transform;
+            pulse.SetParent(root.transform, false);
+            var pulseRing = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            pulseRing.name = "Ring";
+            Object.DestroyImmediate(pulseRing.GetComponent<Collider>());
+            pulseRing.transform.SetParent(pulse, false);
+            pulseRing.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            var pulseRenderer = pulseRing.GetComponent<Renderer>();
+            pulseRenderer.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>($"{GeneratedDir}/ARReticle.mat");
+            pulseRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            var tapPulse = pulse.gameObject.AddComponent<ARTapPulse>();
+            tapPulse.Init(pulseRenderer);
+
             var guidance = ARGuidance(desktopHud, buttons);
             originGo.AddComponent<ARStage>().Init(origin, raycasts, planes, cam, pivot, reticle, plate.gameObject, guidance.Root, guidance.Hint, guidance.Scale,
                                                   guidance.Move, guidance.Planes, guidance.PlanesLabel, guidance.Help, settings);
+            originGo.GetComponent<ARStage>().SetTapPulse(tapPulse);
 
             root.SetActive(false);
             mode.SetARRig(root);

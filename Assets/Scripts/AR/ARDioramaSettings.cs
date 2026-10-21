@@ -12,7 +12,7 @@ namespace Gridlock.AR
         [Tooltip("The AR pill once the model is down.")]
         public string placedHint = "Pinch to resize · twist to rotate · drag to move · tap cars to play";
         [Tooltip("The bottom help bar in AR.")]
-        public string helpText = "Tap a car, then a bay    Pinch  resize    Twist  rotate    Drag  move";
+        public string helpText = "Tap a car, then a bay    Pinch  resize    Twist  rotate    Drag  move    Hold  zoom in";
         [Tooltip("Renderers whose centre lies outside this world-space box are hidden in AR, so the model ends at its base.")]
         public Bounds bounds = new Bounds(new Vector3(0f, 10f, 4f), new Vector3(66f, 60f, 58f));
         [Tooltip("World metres per real metre at placement (bigger = smaller model).")]
@@ -24,5 +24,7 @@ namespace Gridlock.AR
         public float cutawayBand;
         [Tooltip("Only things reaching higher than this count as wall for the cutaway (low furniture stays).")]
         public float cutawayMinHeight = 1.4f;
+        [Tooltip("An outdoor model: its sun turns to the real room's main light (rooms only take the room's brightness and colour).")]
+        public bool outdoorLight = true;
     }
 }

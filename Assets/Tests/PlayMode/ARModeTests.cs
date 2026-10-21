@@ -249,11 +249,28 @@ namespace Gridlock.Tests
             var algorithm = sim.GetType().GetProperty("CurrentAlgorithm")!.GetValue(sim);
             StringAssert.Contains("SRTF", algorithm.GetType().GetProperty("Name")!.GetValue(algorithm).ToString());
 
-            // A wider look from the right side: the right wall hides, the far ones stay.
+            Assert.IsTrue(GameObject.Find("Tap Pulse/Ring").GetComponent<Renderer>().enabled, "a ring flashes under the tapped desk");
+
+            // Hold to focus: the model grows 2.5× around the held spot, which moves onto the anchor; holding again shows it all.
+            var origin = stage.GetComponent<Unity.XR.CoreUtils.XROrigin>().transform;
+            var deskPoint = Centre(srtf);
+            Assert.IsTrue(stage.FocusAt(ScreenPoint(deskPoint)), "a hold on the desk zooms in");
+            yield return new WaitForSecondsRealtime(0.7f);
+            Assert.AreEqual(30f / 2.5f, origin.localScale.x, 0.05f, "zoomed in 2.5×");
+            var onTable = origin.InverseTransformPoint(new Vector3(deskPoint.x, GameObject.Find("AR Pivot").transform.position.y, deskPoint.z));
+            // (The focus is the point the ray meets on the desk, a little off its centre.)
+            Assert.Less(Vector3.Distance(onTable, Table), 0.06f, "the held spot sits where the model was placed");
+            GridlockSceneTests.Capture("ar_cpu_02_focused");
+            stage.Unfocus();
+            yield return new WaitForSecondsRealtime(0.7f);
+            Assert.AreEqual(30f, origin.localScale.x, 0.05f, "back to the whole lab");
+            AssertAnchored(stage);
+
+            // Turned 60°: the right wall hides, the far ones stay.
             stage.Rotate(-60f);
             yield return null;
             yield return null;
-            GridlockSceneTests.Capture("ar_cpu_02_turned");
+            GridlockSceneTests.Capture("ar_cpu_03_turned");
         }
 
         [UnityTest]
