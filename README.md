@@ -332,6 +332,17 @@ PULSE_SINK=silent $UNITY -batchmode -projectPath . -runTests -testPlatform PlayM
 If the sound still reaches your speakers, move the stream yourself. Find it with `pactl list short sink-inputs`, then
 run `pactl move-sink-input <id> silent`. Remove the sink afterwards with `pactl unload-module module-null-sink`.
 
+### Releasing
+
+One command builds both APKs, commits the version, tags it, pushes, and publishes a GitHub Release with the APKs:
+
+```bash
+Tools/release.sh 0.2.0            # needs the Unity editor closed and gh logged in
+Tools/release.sh 0.2.0 --dry-run  # build only, into Builds/release/
+```
+
+The version code grows with each release (0.2.0 → 200), so installed copies update in place.
+
 ### Working together
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and pull-request workflow, scene-merge rules and code style.

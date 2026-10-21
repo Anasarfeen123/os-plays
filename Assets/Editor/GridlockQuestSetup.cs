@@ -90,12 +90,27 @@ namespace Gridlock.Editor
                 throw new BuildFailedException($"{label} build {summary.result}");
         }
 
+        /// <summary>
+        /// Tools/release.sh passes the release version (e.g. 0.2.0) in OSPLAYS_VERSION: it becomes the app's version name,
+        /// and the version code (0.2.0 → 200) grows with every release, so phones and headsets accept the update.
+        /// </summary>
+        static void ApplyReleaseVersion()
+        {
+            var version = Environment.GetEnvironmentVariable("OSPLAYS_VERSION");
+            if (string.IsNullOrEmpty(version)) return;
+            var parts = version.Split('.').Select(int.Parse).Concat(new[] { 0, 0, 0 }).Take(3).ToArray();
+            PlayerSettings.bundleVersion = version;
+            PlayerSettings.Android.bundleVersionCode = parts[0] * 10000 + parts[1] * 100 + parts[2];
+            Debug.Log($"[GRIDLOCK] Version {version} (code {PlayerSettings.Android.bundleVersionCode})");
+        }
+
         /// <summary>Android player settings shared by the Quest and phone builds.</summary>
         internal static void ConfigurePlayer()
         {
             var android = NamedBuildTarget.Android;
             PlayerSettings.companyName = "Anas Arfeen";
             PlayerSettings.productName = "OS Plays";
+            ApplyReleaseVersion();
             ConfigureBranding();
             PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
             PlayerSettings.SetManagedStrippingLevel(android, ManagedStrippingLevel.Low);
