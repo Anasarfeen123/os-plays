@@ -9,9 +9,9 @@ namespace Gridlock.XR
     /// Picks the presentation at startup:
     /// <list type="bullet">
     /// <item>a running headset (always in the Quest build): the XR rig;</item>
-    /// <item>an Android phone in a lot scene: AR — the lot is placed as a miniature on a real floor or table, with the
-    /// touch HUD on top (falls back to the touch view if the phone has no ARCore);</item>
-    /// <item>otherwise the desktop overview camera, with touch controls on a phone (the hub).</item>
+    /// <item>an Android phone: AR — the scene is placed as a tabletop model on a real floor or table, with the touch HUD
+    /// on top (falls back to the touch view if the phone has no ARCore);</item>
+    /// <item>otherwise the desktop camera (or the scenario's first-person player), with touch controls on a phone.</item>
     /// </list>
     /// In the editor the XR rig (with the XR Interaction Simulator) or AR can be forced on for testing.
     /// </summary>
@@ -62,6 +62,7 @@ namespace Gridlock.XR
 
             xrOrigin.SetActive(XRActive);
             desktopRig.SetActive(!XRActive);
+            if (phoneAR) ARStage.PrepareRig(arRig);
             if (arRig != null) arRig.SetActive(phoneAR);
             if (simulate) Instantiate(simulatorPrefab);
 
@@ -99,6 +100,11 @@ namespace Gridlock.XR
             foreach (var cam in desktopRig.GetComponentsInChildren<Camera>(true)) cam.enabled = on;
             foreach (var ears in desktopRig.GetComponentsInChildren<AudioListener>(true)) ears.enabled = on;
             foreach (var orbit in desktopRig.GetComponentsInChildren<DesktopCameraController>(true)) orbit.enabled = on;
+            // The hub's walking and looking drive the desktop camera; in AR the phone itself is the view.
+            foreach (var roam in desktopRig.GetComponentsInChildren<Gridlock.Hub.HubRoamer>(true)) roam.enabled = on;
+            foreach (var look in desktopRig.GetComponentsInChildren<Gridlock.Hub.HubDesktopLook>(true)) look.enabled = on;
+            foreach (var stand in desktopRig.GetComponentsInChildren<Gridlock.Hub.HubRoamButton>(true)) stand.gameObject.SetActive(on);
+            foreach (var sit in desktopRig.GetComponentsInChildren<Gridlock.Hub.HubSitButton>(true)) sit.gameObject.SetActive(on);
         }
     }
 }

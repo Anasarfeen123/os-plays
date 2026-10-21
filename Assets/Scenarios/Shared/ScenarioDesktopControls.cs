@@ -35,11 +35,43 @@ public class ScenarioDesktopControls : MonoBehaviour
     RectTransform stick, knob;
     int stickFinger = -1;
 
+    bool ar;
+
     void Start()
     {
         view = movement.GetComponentInChildren<Camera>(true);
+        var mode = XRModeController.Current;
+        ar = mode != null && mode.ARActive;
+        if (ar)
+        {
+            UseARControls();
+            return;
+        }
         if (TouchGestures.IsTouchDevice) BuildStick();
     }
+
+    /// <summary>
+    /// Phone AR: the scene is a model on the table, so there is no one to walk or look around with. The crosshair HUD goes,
+    /// and a tap on the model uses what it hits (what [E] does on a keyboard).
+    /// </summary>
+    void UseARControls()
+    {
+        movement.enabled = false;
+        interaction.enabled = false;
+        foreach (var canvas in movement.GetComponentsInChildren<Canvas>(true))
+            if (canvas.isRootCanvas && canvas.name is "PlayerUI" or "PlayerHUD_Canvas") canvas.gameObject.SetActive(false);
+        Gridlock.AR.ARStage.TapHandlers.Add(UseTapped);
+    }
+
+    static bool UseTapped(Collider hit)
+    {
+        var target = hit.GetComponentInParent<IInteractable>();
+        if (target == null) return false;
+        target.Interact();
+        return true;
+    }
+
+    void OnDestroy() => Gridlock.AR.ARStage.TapHandlers.Remove(UseTapped);
 
     /// <summary>Base and knob, bottom-left. The base catches UI raycasts, so touches on it never turn the view.</summary>
     void BuildStick()
@@ -92,6 +124,7 @@ public class ScenarioDesktopControls : MonoBehaviour
 
     void Update()
     {
+        if (ar) return;
         bool menuOpen = SystemMenu.Instance != null && SystemMenu.Instance.IsOpen;
         if (menuOpen != menuWasOpen)
         {

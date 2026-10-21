@@ -11,6 +11,8 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 /// to its table, as does a box dropped on the floor.</item>
 /// <item>Monitor or phone: look at (or tap) a box to pick it up and at a pallet to put it there, which asks the placement
 /// manager exactly as a drop in VR does. A wrong frame keeps the box in hand.</item>
+/// <item>Phone AR: the warehouse is a model on the table, so a picked box floats up above its spot, slowly turning, until
+/// a pallet is tapped.</item>
 /// </list>
 /// Boxes whose page is in memory stay on their pallet until the algorithm evicts them.
 /// </summary>
@@ -35,6 +37,7 @@ public class MemoryScenarioAdapter : MonoBehaviour
     Quaternion carriedRotation;
 
     bool xr;
+    bool ar;
     Vector3[] tableSpots;
     float[] strayTimers;
 
@@ -49,6 +52,10 @@ public class MemoryScenarioAdapter : MonoBehaviour
 
         var mode = XRModeController.Current;
         xr = mode != null && mode.XRActive;
+        ar = mode != null && mode.ARActive;
+        // AR has no first-person view to carry in front of: a picked box hangs under its own carrier above its spot, so a
+        // box the manager takes back (evicted, reset) still leaves the carrier and is no longer "in hand".
+        if (ar) carryAnchor = new GameObject("AR Carry").transform;
         if (xr)
         {
             tableSpots = new Vector3[boxes.Length];
@@ -82,6 +89,15 @@ public class MemoryScenarioAdapter : MonoBehaviour
             SetColliders(carried, true);
             carried = null;
         }
+        if (carried != null && ar) Hover(carried);
+    }
+
+    /// <summary>AR: the picked box floats half a metre (model scale) above where it lay, bobbing and turning.</summary>
+    void Hover(GameObject box)
+    {
+        float t = Time.time;
+        box.transform.position = carriedPosition + Vector3.up * (0.55f + 0.06f * Mathf.Sin(t * 3f));
+        box.transform.rotation = Quaternion.Euler(0f, t * 45f, 0f) * carriedRotation;
     }
 
     // ---- Headset ----
@@ -166,6 +182,12 @@ public class MemoryScenarioAdapter : MonoBehaviour
         carriedPosition = box.transform.position;
         carriedRotation = box.transform.rotation;
         SetHeld(box, true);
+        if (ar)
+        {
+            box.transform.SetParent(carryAnchor, true);
+            Hover(box);
+            return;
+        }
         box.transform.SetParent(carryAnchor, false);
         box.transform.localPosition = new Vector3(0.28f, -0.32f, 0.85f);
         box.transform.localRotation = Quaternion.identity;

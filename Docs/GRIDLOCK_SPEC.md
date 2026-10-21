@@ -325,22 +325,39 @@ replays it. The control room has no narration.
   that the XR rig replaces the desktop camera, that world canvases take rays and pokes, that the hand and controller
   interactors can press UI, that ≡ is wired, and that the menu opens within arm's reach.
 
-## 16h. Phone AR (both lot scenes, as of 2026-10-12)
+## 16h. Phone AR (every scene, as of 2026-10-21)
 
-Android phones run the Deadlock and Banker scenes in AR (ARCore through AR Foundation 6.6). Quest stays full VR. The hub on a phone stays the non-AR touch room.
+Android phones run every scene in AR (ARCore through AR Foundation 6.6): the control room, the Deadlock and Banker lots,
+the CPU scheduling lab and the memory warehouse. Each one is a tabletop model. Quest stays full VR.
 
-- **Finding a surface:** at start the phone shows the camera feed and the AR pill ("Slowly move your phone to find the floor or a table"). Detected horizontal surfaces get a translucent cyan grid, and a placement ring follows the centre of the screen on them.
-- **Placing:** tap places the lot as a miniature (default 1:40) on a grass base, facing the player. Everything beyond the city block (skyline, 200 m ground, fog, through-traffic) is hidden.
-- **Gestures:** pinch resizes (1:12 to 1:140), a two-finger twist rotates, and a one-finger drag slides the lot across the surface. MOVE LOT picks it up to place again, and SHOW/HIDE GRID toggles the plane grid.
-- **Playing:** tapping a car or bay in the miniature works exactly like a click on a monitor. The HUD, the guide panel and the system menu are unchanged.
-- **Placement gate:** the scripted demo and the narrated tour wait for placement (`ScenePlacement.Ready`).
-- **How it works:** the scene never moves. The AR session origin is placed and scaled around it (`ARPlacementMath.OriginFor`), so every simulation position stays valid.
-- **No ARCore:** ARCore is marked *optional*. A phone without it falls back to the touch orbit view (`XRModeController.FallBackFromAR`).
+- **Finding a surface:** at start the phone shows the camera feed and the AR pill ("Slowly move your phone to find the floor or a table"). Detected horizontal surfaces get a translucent cyan grid, and a placement ring follows the centre of the screen on them. Until the model is placed, the scene is parked 20 km away, beyond the camera's far plane.
+- **Placing:** a tap places the model facing the player, on a base (the lot's grass slab, or a dark plinth with a glowing edge in the scene's colour for the rooms), with a soft contact shadow on the real surface and a name plate on its front.
+
+  | Scene | Model | Default scale | Range |
+  |---|---|---|---|
+  | Control room | 17 × 14 m room | 1 : 26 | 1 : 8 to 1 : 60 |
+  | Deadlock / Banker lot | 66 × 58 m city block | 1 : 60 | 1 : 12 to 1 : 140 |
+  | CPU lab | 20 × 20 m lab | 1 : 30 | 1 : 8 to 1 : 70 |
+  | Memory warehouse | 16 × 11 m warehouse | 1 : 24 | 1 : 6 to 1 : 60 |
+
+- **Dollhouse rooms:** the rooms have no ceiling in AR, and the walls on the sides facing the phone hide as it circles the model, so the player always looks into the room.
+- **Gestures:** pinch resizes, a two-finger twist rotates, and a one-finger drag slides the model across the surface. MOVE picks it up to place again, and SHOW/HIDE GRID toggles the plane grid.
+- **Playing:** a tap on the model does what a click (or [E]) does on a monitor:
+  - the lot: cars and bays;
+  - the control room: its monitor rises above the room as a 4× holo screen; tap a scenario card to focus it, tap it again to enter;
+  - the CPU lab: desks, the console and the blocks, plus RUN / PAUSE, STEP and SIMULATOR buttons on the HUD;
+  - the warehouse: tap a page box (it floats up above its spot), then a frame's pallet.
+
+  World screens with buttons take finger taps directly. Walls cut away for the view never block a tap.
+- **One placement for the whole visit:** the AR session outlives the scene (`ARStage.PrepareRig` drops a later scene's own session before it wakes). A scenario entered from the hub appears on the same spot, facing the same way, without scanning again.
+- **Placement gate:** the scripted demo and the narrated tours wait for placement (`ScenePlacement.Ready`).
+- **How it works:** the scene never moves. The AR session origin is placed and scaled around it (`ARPlacementMath.OriginFor`), so every simulation position stays valid. Per-scene settings are in `ARDioramaSettings` (set by the scene builder).
+- **No ARCore:** ARCore is marked *optional*. A phone without it falls back to the touch view (`XRModeController.FallBackFromAR`).
 - **Build:**
   - `GridlockPhoneSetup` assigns only the ARCore loader (GLES3 first, min SDK 24).
   - `GridlockQuestSetup` assigns only OpenXR.
   - The builder adds AR Foundation's background renderer feature to the URP renderers.
-- **Tests:** ARPlacementMathTests (EditMode) and ARModeTests (PlayMode, `XRModeController.ForceARInEditor`, which stands in for the plane hit).
+- **Tests:** ARPlacementMathTests (EditMode) and ARModeTests (PlayMode, `XRModeController.ForceARInEditor`, which stands in for the plane hit). ARModeTests covers placement in every scene, the tap paths, and the hub-to-scenario hand-over on the same spot.
 
 ## 16i. Scenarios 02 and 03 (imported, as of 2026-10-14)
 

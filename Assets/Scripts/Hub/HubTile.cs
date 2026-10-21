@@ -1,4 +1,6 @@
 using System.Collections;
+using Gridlock.AR;
+using Gridlock.XR;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,9 +10,10 @@ namespace Gridlock.Hub
     /// <summary>
     /// One scenario card on the hub monitor. The screen itself is not touchable: the desk keyboard moves a focus
     /// between cards (◄ ► or 1 2 3) and ENTER activates the focused one. Cards slide in during boot; the focused card
-    /// lifts and glows; activating launches its scene, or, if locked, shakes and buzzes.
+    /// lifts and glows; activating launches its scene, or, if locked, shakes and buzzes. In phone AR the cards are tapped
+    /// directly: a tap focuses a card, a second tap enters it.
     /// </summary>
-    public class HubTile : MonoBehaviour
+    public class HubTile : MonoBehaviour, IARTappable
     {
         [SerializeField] HubScreen screen;
         [SerializeField] string sceneName;
@@ -52,6 +55,19 @@ namespace Gridlock.Hub
             group.blocksRaycasts = false; // driven by the desk keyboard, never by pointing at the screen
             actionText = action != null ? action.text : "";
         }
+
+        void Start()
+        {
+            var mode = XRModeController.Current;
+            if (mode == null || !mode.ARActive) return;
+            // A tap target the size of the card, in the screen's plane (AR taps are physics rays from the phone camera).
+            var box = gameObject.AddComponent<BoxCollider>();
+            box.size = new Vector3(rect.rect.width, rect.rect.height, 4f);
+            box.center = new Vector3((0.5f - rect.pivot.x) * rect.rect.width, (0.5f - rect.pivot.y) * rect.rect.height, 0f);
+            box.isTrigger = true;
+        }
+
+        public void OnARTap() => screen.TileTapped(this);
 
         public IEnumerator Reveal(float delay)
         {

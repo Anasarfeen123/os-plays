@@ -6,10 +6,10 @@ using UnityEngine.Rendering;
 namespace Gridlock.Editor
 {
     /// <summary>
-    /// Android phone build: the same scenes without VR. The OpenXR loader is removed for the build, so the app runs the
-    /// desktop presentation with touch controls (see QuestPerformance.IsStandaloneHeadset), installs next to the
-    /// Quest app under its own id, and auto-rotates between the two landscape orientations. The Quest configuration is
-    /// restored afterwards, so the project stays set up for the headset.
+    /// Android phone build: the same scenes in AR instead of VR. The build uses the ARCore loader instead of OpenXR, so
+    /// every scene is placed as a tabletop model (see XRModeController and ARStage; phones without ARCore get the touch
+    /// view). It installs next to the Quest app under its own id and auto-rotates between the two landscape orientations.
+    /// The Quest configuration is restored afterwards, so the project stays set up for the headset.
     /// Menu: GRIDLOCK ▸ Build Phone APK.
     /// Batchmode: -executeMethod Gridlock.Editor.GridlockPhoneSetup.ConfigureAndBuild (-buildTarget Android)
     /// </summary>
@@ -69,7 +69,7 @@ namespace Gridlock.Editor
             PlayerSettings.Android.optimizedFramePacing = true;
             PlayerSettings.Android.renderOutsideSafeArea = false; // keep the HUD clear of camera cut-outs
             AssetDatabase.SaveAssets();
-            Debug.Log("[GRIDLOCK] Configured for Android phones (ARCore AR in the lot scenes, touch hub).");
+            Debug.Log("[GRIDLOCK] Configured for Android phones (ARCore AR in every scene).");
         }
     }
 }

@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Linq;
+using System.Reflection;
 using Gridlock.AR;
 using Gridlock.Banker;
 using Gridlock.Core;
 using Gridlock.Guide;
+using Gridlock.Hub;
 using Gridlock.XR;
 using NUnit.Framework;
 using UnityEngine;
@@ -14,9 +16,10 @@ using UnityEngine.TestTools;
 namespace Gridlock.Tests
 {
     /// <summary>
-    /// Phone AR in the editor (no camera feed; the test stands in for ARCore's plane hit): the lot waits until it is placed
-    /// on a surface, appears there as a miniature in front of the phone, tours and the demo start only then, pinch/twist
-    /// keep it anchored, and tapping a car in the miniature selects it.
+    /// Phone AR in the editor (no camera feed; the test stands in for ARCore's plane hit): every scene waits until it is
+    /// placed on a surface and appears there as a model in front of the phone; tours and the demo start only then;
+    /// pinch/twist keep it anchored; taps play (a car, a hub card, a lab desk, a page box and its pallet); and a scenario
+    /// entered from the hub appears on the same spot without scanning again.
     /// </summary>
     public class ARModeTests
     {
@@ -28,12 +31,14 @@ namespace Gridlock.Tests
             LogAssert.ignoreFailingMessages = true;
             XRModeController.ForceARInEditor = true;
             GameSettings.AutoTours = true;
+            ARStage.ForgetPlacement();
         }
 
         [TearDown]
         public void TearDown()
         {
             XRModeController.ForceARInEditor = false;
+            ARStage.ForgetPlacement();
             ScenePlacement.Ready = true;
             Time.timeScale = 1f;
             GuideTour.Seen = BankerTour.Seen = true;
@@ -145,6 +150,148 @@ namespace Gridlock.Tests
             yield return WaitFor(() => tour.CurrentStep == "banker_fleets", 30f, "the Banker tour");
             yield return new WaitForSeconds(1f);
             GridlockSceneTests.Capture("ar_03_banker_miniature");
+        }
+
+        // ---- The rooms: hub, CPU lab, memory warehouse ----
+
+        static MonoBehaviour Find(string typeName) =>
+            UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(b => b.GetType().Name == typeName);
+
+        static object Call(object target, string method, params object[] args) =>
+            target.GetType().GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(target, args);
+
+        static T Field<T>(object target, string field) =>
+            (T)target.GetType().GetField(field, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(target);
+
+        static Vector2 ScreenPoint(Vector3 world) => Camera.main.WorldToScreenPoint(world);
+
+        static Vector3 Centre(Component c)
+        {
+            // A solid part (a trigger volume is invisible and does not take AR taps), else a card's own tap target.
+            var col = c.GetComponentsInChildren<Collider>().FirstOrDefault(x => !x.isTrigger) ?? c.GetComponentInChildren<Collider>();
+            return col != null ? col.bounds.center : c.transform.position;
+        }
+
+        /// <summary>The model is on the table in front of the phone, at its own scale, with the AR overlay showing.</summary>
+        static void AssertOnTable(ARStage stage, string scene)
+        {
+            Assert.IsTrue(stage.Placed && ScenePlacement.Ready, $"{scene}: placed");
+            AssertAnchored(stage);
+            var centre = Camera.main.WorldToViewportPoint(stage.Settings.bounds.center);
+            Assert.Greater(centre.z, 0f, $"{scene}: the model is in front of the phone");
+            Assert.That(centre.x, Is.InRange(0.2f, 0.8f), $"{scene}: centred");
+            Assert.That(centre.y, Is.InRange(0.1f, 0.9f), $"{scene}: centred");
+            Assert.IsTrue(GameObject.Find("AR Diorama Base").activeInHierarchy, $"{scene}: base under the model");
+        }
+
+        [UnityTest]
+        public IEnumerator Hub_TapCards_EntersScenario_OnTheSameSpot()
+        {
+            SceneManager.LoadScene("GridlockHub");
+            yield return new WaitForSeconds(1.5f);
+            Assert.IsTrue(XRModeController.Current.ARActive, "the hub runs in AR on a phone");
+            var stage = Phone();
+            Assert.IsFalse(stage.Placed);
+            GridlockSceneTests.Capture("ar_hub_00_scanning");
+            stage.PlaceAt(Table);
+            AssertOnTable(stage, "hub");
+            var screen = UnityEngine.Object.FindFirstObjectByType<HubScreen>();
+            yield return WaitFor(() => screen.Booted, 20f, "the hub screen to boot");
+            yield return new WaitForSeconds(1f);
+            GridlockSceneTests.Capture("ar_hub_01_control_room");
+
+            // The ceiling is left out and the near walls are cut away: from the phone the desk and the holo screen show.
+            var ceiling = GameObject.Find("Room/Shell/Ceiling").GetComponent<Renderer>();
+            Assert.IsFalse(ceiling.enabled, "no ceiling on the dollhouse");
+
+            var memory = UnityEngine.Object.FindObjectsByType<HubTile>(FindObjectsSortMode.None).First(t => t.name == "Tile_Memory");
+            var tiles = Field<HubTile[]>(screen, "tiles");
+            Assert.IsTrue(stage.TapAt(ScreenPoint(Centre(memory))), "a tap reaches the card on the holo screen");
+            yield return null;
+            Assert.AreEqual(Array.IndexOf(tiles, memory), screen.FocusedIndex, "the first tap focuses the card");
+            yield return new WaitForSeconds(0.4f);
+            GridlockSceneTests.Capture("ar_hub_02_card_focused");
+            Assert.IsTrue(stage.TapAt(ScreenPoint(Centre(memory))), "a second tap enters");
+
+            yield return WaitFor(() => SceneManager.GetActiveScene().name == "GridlockMemory", 25f, "the memory scene to load");
+            yield return new WaitForSeconds(2f);
+            var next = ARStage.Current;
+            Assert.IsNotNull(next, "the warehouse runs in AR too");
+            Phone();
+            AssertOnTable(next, "memory (from the hub)");
+            Assert.AreEqual(1, UnityEngine.Object.FindObjectsByType<UnityEngine.XR.ARFoundation.ARSession>(FindObjectsSortMode.None).Length,
+                            "one AR session carries on across scenes");
+            GridlockSceneTests.Capture("ar_hub_03_arrived_in_memory");
+        }
+
+        [UnityTest]
+        public IEnumerator Cpu_TapDesk_PicksAlgorithm_ActionButtons()
+        {
+            SceneManager.LoadScene("GridlockCPUScheduling");
+            yield return new WaitForSeconds(1.5f);
+            var stage = Phone();
+            Assert.IsFalse(((Behaviour)GameObject.Find("Player").GetComponent("PlayerMovement")).enabled, "nobody walks a model");
+            stage.PlaceAt(Table);
+            AssertOnTable(stage, "cpu");
+            yield return new WaitForSeconds(1.5f);
+            GridlockSceneTests.Capture("ar_cpu_01_lab");
+
+            var actions = GameObject.Find("AR Guidance/Actions");
+            Assert.IsNotNull(actions, "run / step / simulator buttons on the AR HUD");
+            Assert.AreEqual(3, actions.transform.childCount);
+
+            var srtf = GameObject.Find("SRTF").GetComponent("AlgorithmWorkstation");
+            Assert.IsTrue(stage.TapAt(ScreenPoint(Centre(srtf))), "a tap on the SRTF desk");
+            yield return null;
+            var simType = AppDomain.CurrentDomain.GetAssemblies().Select(x => x.GetType("SimulationController")).First(t => t != null);
+            var sim = simType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!.GetValue(null);
+            Assert.IsNotNull(sim, "the lab's simulation");
+            var algorithm = sim.GetType().GetProperty("CurrentAlgorithm")!.GetValue(sim);
+            StringAssert.Contains("SRTF", algorithm.GetType().GetProperty("Name")!.GetValue(algorithm).ToString());
+
+            // A wider look from the right side: the right wall hides, the far ones stay.
+            stage.Rotate(-60f);
+            yield return null;
+            yield return null;
+            GridlockSceneTests.Capture("ar_cpu_02_turned");
+        }
+
+        [UnityTest]
+        public IEnumerator Memory_TapBoxThenPallet_LoadsThePage()
+        {
+            SceneManager.LoadScene("GridlockMemory");
+            yield return new WaitForSeconds(1.5f);
+            var stage = Phone();
+            stage.PlaceAt(Table);
+            AssertOnTable(stage, "memory");
+            yield return new WaitForSeconds(1f);
+            GridlockSceneTests.Capture("ar_memory_01_warehouse");
+
+            var manager = Find("MemoryPlacementManager");
+            Call(manager, "SelectFIFO");
+            yield return new WaitForSeconds(0.5f);
+            var adapter = Find("MemoryScenarioAdapter");
+            int first = Field<int[]>(manager, "referenceString")[0];
+            var boxes = Field<GameObject[]>(adapter, "boxes");
+            var pages = Field<int[]>(adapter, "pages");
+            var box = boxes[Array.IndexOf(pages, first)];
+            var lying = box.transform.position;
+
+            Assert.IsTrue(stage.TapAt(ScreenPoint(Centre(box.transform))), "a tap on the page box");
+            yield return null;
+            Assert.AreEqual(box, adapter.GetType().GetProperty("Carried")!.GetValue(adapter), "the box is picked up");
+            Assert.Greater(box.transform.position.y, lying.y + 0.3f, "it floats above its spot");
+            yield return new WaitForSeconds(0.3f);
+            GridlockSceneTests.Capture("ar_memory_02_box_picked");
+
+            var frames = Field<Transform[]>(adapter, "frames");
+            // (The frame objects' order and names do not follow the frame numbers: the adapter keeps the map.)
+            var firstFrame = frames[Array.IndexOf(Field<int[]>(adapter, "frameIndices"), 0)];
+            Assert.IsTrue(stage.TapAt(ScreenPoint(Centre(firstFrame))), "a tap on the first frame's pallet");
+            yield return new WaitForSeconds(0.8f);
+            var slots = Field<Transform[]>(manager, "frameSlots");
+            Assert.AreEqual(slots[0], box.transform.parent, "page loaded into frame 1");
+            GridlockSceneTests.Capture("ar_memory_03_loaded");
         }
     }
 }

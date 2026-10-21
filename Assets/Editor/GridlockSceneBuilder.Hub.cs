@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Gridlock.AR;
 using Gridlock.Core;
 using Gridlock.Hub;
 using Gridlock.UI;
@@ -96,6 +97,17 @@ namespace Gridlock.Editor
             var desktopInput = keyboard.gameObject.AddComponent<HubDesktopInput>();
             desktopInput.Init(deskKeys.ToArray());
             BuildTouchKeypad(desktop.Find("Desktop HUD"), desktopInput);
+            BuildRoomARRig(mode, desktop.Find("Desktop HUD"), new ARDioramaSettings
+            {
+                subject = "control room",
+                placedHint = "Tap a card on the big screen, tap it again to enter",
+                helpText = "Tap a scenario card    Pinch  resize    Twist  rotate    Drag  move",
+                bounds = new Bounds(new Vector3(0f, 2.6f, 0f), new Vector3(18.4f, 6.2f, 16f)),
+                scale = 26f,
+                scaleRange = new Vector2(8f, 60f),
+                ceilingCut = 4.5f,
+                cutawayBand = 1f,
+            }, new Rect(RoomMinX - 0.4f, RoomMinZ - 0.4f, RoomMaxX - RoomMinX + 0.8f, RoomMaxZ - RoomMinZ + 0.8f), 0f, "CONTROL ROOM", Cyan);
             var roamer = BuildDesktopRoamer(desktop, desktopInput);
             seat.Init(mode, origin, roamer, room.Find("Chair/StandPoint"));
             BuildAudioSystems("music_hub");
@@ -920,6 +932,8 @@ namespace Gridlock.Editor
             // --- Canvas ---
             var canvas = WorldCanvas("MonitorCanvas", root, new Vector2(1920, 1080), MonitorScale);
             canvas.transform.position = MonitorPos;
+            // Phone AR: a 6 cm screen on the tabletop model becomes a hologram above the room, big enough to read and tap.
+            canvas.AddComponent<Gridlock.AR.ARHoloScreen>().Init(5f, new Vector3(0f, 3.1f, 0.8f));
             canvas.GetComponent<Canvas>().sortingOrder = 1;
 
             var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();

@@ -152,6 +152,14 @@ namespace Gridlock.Hub
             }
         }
 
+        /// <summary>Phone AR: a tap on a card focuses it; a tap on the focused card enters it.</summary>
+        public void TileTapped(HubTile tile)
+        {
+            int index = Array.IndexOf(tiles, tile);
+            if (index < 0) return;
+            KeyPressed(index == focus ? HubKey.KeyAction.Enter : HubKey.KeyAction.Slot, index);
+        }
+
         void Focus(int index, bool sound = true)
         {
             tiles[focus].SetFocused(false);

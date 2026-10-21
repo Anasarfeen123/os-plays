@@ -17,12 +17,17 @@ public class PlayerFeedbackFollower : MonoBehaviour
 
     private Canvas[] canvases;
     private Renderer[] renderers;
+    private Vector3 baseScale;
+    private bool ar;
 
     private void Start()
     {
         welcome = FindAnyObjectByType<WelcomeSequenceController>();
         canvases = GetComponentsInChildren<Canvas>(true);
         renderers = GetComponentsInChildren<Renderer>(true);
+        baseScale = transform.localScale;
+        var mode = Gridlock.XR.XRModeController.Current;
+        ar = mode != null && mode.ARActive;
     }
 
     /// <summary>GRIDLOCK: the card floats where the welcome panel's Continue button is, so it waits until that panel closes.</summary>
@@ -38,17 +43,22 @@ public class PlayerFeedbackFollower : MonoBehaviour
     {
         ShowCard(welcome == null || !welcome.WelcomeShowing);
 
-        // GRIDLOCK: follow whichever view is live (the headset camera, or the desktop player's camera).
-        if ((playerCamera == null || !playerCamera.gameObject.activeInHierarchy) && Camera.main != null)
+        // GRIDLOCK: follow whichever view is live (the headset camera, the desktop player's camera, or the AR phone).
+        var live = playerCamera != null ? playerCamera.GetComponent<Camera>() : null;
+        if ((live == null || !live.isActiveAndEnabled) && Camera.main != null)
             playerCamera = Camera.main.transform;
         if (playerCamera == null)
             return;
 
+        // Phone AR: the AR camera's rig is scaled up to the model's size, and the card stays 30 % as far (and as big) as
+        // in a headset, so it floats between the phone and the model instead of inside it.
+        float k = ar ? playerCamera.lossyScale.x * 0.3f : 1f;
+        transform.localScale = baseScale * k;
         Vector3 targetPosition =
             playerCamera.position
-            + playerCamera.right * localOffset.x
+            + (playerCamera.right * localOffset.x
             + playerCamera.up * localOffset.y
-            + playerCamera.forward * localOffset.z;
+            + playerCamera.forward * localOffset.z) * k;
 
         transform.position = Vector3.Lerp(
             transform.position,

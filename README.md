@@ -4,7 +4,7 @@
 
 Operating-systems concepts you can walk into. OS Plays is a Unity VR app for **Meta Quest 2** (and newer Quest
 headsets) where each OS topic is a playable scenario, started from a sci-fi control room. The same app also runs on a
-**desktop** (Linux/Windows, mouse and keyboard) and on **Android phones** (touch, with AR in the parking-lot scenes).
+**desktop** (Linux/Windows, mouse and keyboard) and on **Android phones** (augmented reality: every scene as a model on your table).
 
 | # | Scenario | What you do |
 |---|---|---|
@@ -75,10 +75,10 @@ best, but the control room can be played seated.
 **Without a computer:** copy `OSPlays-Phone.apk` to the phone (Drive, e-mail, USB), tap it, and allow
 **Install unknown apps** for the app you opened it from.
 
-**AR:** the Deadlock and Banker's scenes open in augmented reality on phones with
+**AR:** every scene opens in augmented reality on phones with
 [Google Play Services for AR](https://play.google.com/store/apps/details?id=com.google.ar.core) (ARCore). Point the
-camera at a floor or table, wait for the grid, and tap to place the parking lot. Phones without ARCore play the same
-scenes on the touch screen. The control room and the CPU and Memory scenes always use the touch view.
+camera at a floor or table, wait for the grid, and tap to place the model. Scenarios you enter from the control room
+appear on the same spot. Phones without ARCore play the same scenes on the touch screen.
 
 ### Desktop
 
@@ -145,14 +145,21 @@ menu with that scene's details.
 | CPU Scheduling, Memory | **WASD** walk, mouse look, **E** or click to use what the dot points at. CPU: **U** simulator window. Memory: click a box to pick it up, then a pallet to put it there. |
 | Everywhere | **Esc** or the **≡ MENU** button opens the menu (and frees the mouse). |
 
-### Phone (touch)
+### Phone (AR)
+
+Everywhere: **pinch** to resize the model, **twist** two fingers to rotate it, **drag** one finger to slide it, **MOVE**
+to place it somewhere else. Walk around the table to look from another side; the walls facing you open up.
 
 | Where | Controls |
 |---|---|
-| Control room | Tap the keypad or the desk keys. **STAND UP**, then tap the floor to walk and drag to look. |
-| Deadlock, Banker's | Tap a car, then a bay. Drag to orbit, pinch to zoom, two fingers to pan. In AR, walk around the table. |
-| CPU Scheduling, Memory | On-screen stick to walk, drag to look, tap to use. |
-| Everywhere | **≡ MENU** (top right) or the Android back gesture opens the menu. |
+| Control room | Tap a scenario card on the big holo screen, then tap it again to enter (or use the keypad). |
+| Deadlock, Banker's | Tap a car, then a bay. |
+| CPU Scheduling | Tap a desk to pick an algorithm, the console or the **RUN / STEP / SIMULATOR** buttons to run it. |
+| Memory | Tap a page box (it floats up), then the pallet of a frame. |
+| Everywhere | **≡ MENU** or the Android back gesture opens the menu. |
+
+Without ARCore the phone uses the touch view: tap the keypad in the control room; tap a car, then a bay, drag to orbit,
+pinch to zoom in the lots; an on-screen stick to walk, drag to look and tap to use in the CPU and Memory scenes.
 
 ### Memory Management in VR
 
@@ -333,3 +340,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and pull-request workflow,
 
 Third-party assets (Kenney kits, XR Interaction Toolkit samples, the VR hand models, fonts) and their licenses are
 listed in [Docs/CREDITS.md](Docs/CREDITS.md).
+
+## License
+
+OS Plays' own code and assets are released under the [MIT License](LICENSE). Third-party assets keep their own
+licenses (see [Docs/CREDITS.md](Docs/CREDITS.md)).
