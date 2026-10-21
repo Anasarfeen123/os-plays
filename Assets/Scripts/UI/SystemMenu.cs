@@ -50,6 +50,17 @@ namespace Gridlock.UI
         /// <summary>Above every world canvas in the scenes (they use 0–100).</summary>
         const int OnTopSortingOrder = 1000;
 
+        /// <summary>
+        /// Unity's built-in UI layer. The headset menus live on it, and while the menu is open the rays see only it: XRI
+        /// uses a ray's physics mask as its UI layer filter too, so a mask of 0 made the menu itself unreachable.
+        /// </summary>
+        public const int MenuLayer = 5;
+
+        public static void MoveToMenuLayer(GameObject root)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = MenuLayer;
+        }
+
         public static SystemMenu Instance { get; private set; }
 
         /// <summary>
@@ -86,6 +97,7 @@ namespace Gridlock.UI
             desktopView.SetActive(false);
             xrView.SetActive(false);
             DrawOnTop(xrView);
+            MoveToMenuLayer(xrView);
         }
 
         /// <summary>
@@ -212,9 +224,9 @@ namespace Gridlock.UI
         }
 
         /// <summary>
-        /// While the menu is open the controller and hand rays see only UI: the menu floats within arm's reach, often in
-        /// front of a desk, a monitor or a podium whose colliders would otherwise catch the ray first (and their buttons
-        /// would take the trigger).
+        /// While the menu is open the controller and hand rays see only the menu layer: the menu floats within arm's reach,
+        /// often in front of a desk, a monitor or a podium whose colliders would otherwise catch the ray first (and their
+        /// buttons would take the trigger).
         /// </summary>
         void RaysIgnoreScene(bool ignore)
         {
@@ -223,7 +235,7 @@ namespace Gridlock.UI
                 foreach (var caster in FindObjectsByType<CurveInteractionCaster>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 {
                     blockedRays.Add((caster, caster.raycastMask));
-                    caster.raycastMask = 0;
+                    caster.raycastMask = 1 << MenuLayer;
                 }
                 return;
             }

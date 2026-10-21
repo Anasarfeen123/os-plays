@@ -51,6 +51,7 @@ namespace Gridlock.XR
             // Hidden by disabling the canvas, not the GameObject, so the panel's components still hear game events.
             canvas = panel.GetComponent<Canvas>();
             raycasters = panel.GetComponents<UnityEngine.EventSystems.BaseRaycaster>();
+            Gridlock.UI.SystemMenu.MoveToMenuLayer(panel); // still reachable while the menu limits the rays to that layer
             SetShown(false);
         }
 

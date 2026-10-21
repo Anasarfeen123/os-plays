@@ -153,7 +153,14 @@ namespace Gridlock.Tests
 
             var casters = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactors.Casters.CurveInteractionCaster>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             Assert.IsNotEmpty(casters);
-            Assert.IsTrue(casters.All(c => c.raycastMask.value == 0), "while open, the podium and the lot cannot catch the ray");
+            Assert.IsTrue(casters.All(c => c.raycastMask.value == 1 << SystemMenu.MenuLayer), "while open, the podium and the lot cannot catch the ray");
+            // XRI filters UI hits by the same mask: every menu graphic must be on a layer the rays still see.
+            var menuGraphics = Object.FindObjectsByType<UnityEngine.UI.Graphic>(FindObjectsSortMode.None)
+                                     .Where(g => g.canvas != null && g.canvas.rootCanvas.renderMode == RenderMode.WorldSpace && g.raycastTarget &&
+                                                 g.canvas.rootCanvas.sortingOrder >= 1000).ToArray(); // the menu draws on top
+            Assert.IsNotEmpty(menuGraphics, "the open menu has clickable graphics");
+            Assert.IsTrue(menuGraphics.All(g => casters.All(c => (c.raycastMask.value & (1 << g.gameObject.layer)) != 0)),
+                          "the rays can hit every menu button");
             yield return new WaitForSecondsRealtime(0.4f);
             menu.Toggle();
             Assert.IsFalse(menu.IsOpen);

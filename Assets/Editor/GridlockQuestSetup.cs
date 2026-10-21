@@ -221,7 +221,9 @@ namespace Gridlock.Editor
             if (missing.Length > 0) Debug.LogWarning($"[GRIDLOCK] OpenXR features not found: {string.Join(", ", missing)}");
 
             openxr.renderMode = OpenXRSettings.RenderMode.SinglePassInstanced; // multiview: one pass for both eyes
-            openxr.depthSubmissionMode = OpenXRSettings.DepthSubmissionMode.Depth16Bit;
+            // The eye buffers get this depth format too: 16 bit left ~1.4 cm of precision at 3 m (15 cm at 10 m), so wall
+            // screens a few centimetres off a wall flickered through it.
+            openxr.depthSubmissionMode = OpenXRSettings.DepthSubmissionMode.Depth24Bit;
             openxr.latencyOptimization = OpenXRSettings.LatencyOptimization.PrioritizeInputPolling;
             openxr.optimizeBufferDiscards = true; // memoryless MSAA on Vulkan
             openxr.symmetricProjection = true;    // Quest 2 and later: cheaper multiview rendering

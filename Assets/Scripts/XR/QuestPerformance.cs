@@ -39,6 +39,8 @@ namespace Gridlock.XR
             foreach (var cam in xrOrigin.GetComponentsInChildren<Camera>(true))
             {
                 cam.farClipPlane = Mathf.Min(cam.farClipPlane, 240f); // fog is opaque by 220 m
+                // Depth precision falls with the near plane: the rig's 1 cm made distant screens and walls z-fight.
+                cam.nearClipPlane = Mathf.Max(cam.nearClipPlane, 0.05f);
                 cam.allowHDR = false;
                 var data = cam.GetUniversalAdditionalCameraData();
                 data.renderPostProcessing = false;
