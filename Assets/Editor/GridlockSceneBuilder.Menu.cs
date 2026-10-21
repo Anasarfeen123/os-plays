@@ -271,6 +271,7 @@ namespace Gridlock.Editor
             ChoiceRow(d, 1, "POST EFFECTS", "Glow and colour grading", Setting.PostEffects, new[] { "ON", "OFF" }, new[] { 1f, 0f });
             ChoiceRow(d, 2, "SHADOWS", "Sun shadows on the lot", Setting.Shadows, new[] { "ON", "OFF" }, new[] { 1f, 0f });
             ChoiceRow(d, 3, "SUBTITLES", "Captions under the narrator", Setting.Subtitles, new[] { "ON", "OFF" }, new[] { 1f, 0f });
+            ChoiceRow(d, 4, "MIXED REALITY", "Quest: your room, the scene as a table model", Setting.MixedReality, new[] { "OFF", "ON" }, new[] { 0f, 1f });
 
             // CONTROLS
             var c = pages[2].transform;

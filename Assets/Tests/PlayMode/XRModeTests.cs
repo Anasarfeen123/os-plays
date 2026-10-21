@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq;
+using Gridlock.Core;
 using Gridlock.Guide;
 using Gridlock.UI;
 using Gridlock.XR;
@@ -30,6 +31,8 @@ namespace Gridlock.Tests
         public IEnumerator TearDown()
         {
             XRModeController.ForceSimulatorInEditor = false;
+            QuestMixedReality.ForceInEditor = false;
+            GameSettings.Set(Setting.MixedReality, 0f);
             Time.timeScale = 1f;
             AudioListener.pause = false;
             GuideTour.Seen = BankerTour.Seen = true;
@@ -285,6 +288,52 @@ namespace Gridlock.Tests
             {
                 foreach (var pair in saved) Gridlock.Core.GameSettings.Set(pair.Key, pair.Value);
             }
+        }
+
+        [UnityTest]
+        public IEnumerator MixedReality_TableModel_MenuAtArmsLength_OffRestoresTheRoom()
+        {
+            QuestMixedReality.ForceInEditor = true;
+            GameSettings.Set(Setting.MixedReality, 1f);
+            SceneManager.LoadScene("GridlockMemory");
+            yield return new WaitForSeconds(2f);
+
+            var mr = Object.FindFirstObjectByType<QuestMixedReality>();
+            Assert.IsTrue(mr.Active, "mixed reality starts with the scene");
+            var origin = Object.FindFirstObjectByType<Unity.XR.CoreUtils.XROrigin>();
+            Assert.AreEqual(24f, origin.transform.localScale.x, 0.01f, "the warehouse at 1 : 24");
+            Assert.AreEqual(24f, QuestMixedReality.WorldScale, 0.01f);
+            Assert.AreEqual(0f, origin.Camera.backgroundColor.a, "see-through background for passthrough");
+            Assert.IsTrue(GameObject.Find("AR Diorama Base").activeInHierarchy, "the plinth under the model");
+            Assert.IsFalse(GameObject.Find("_Shell/Ceiling").GetComponent<Renderer>().enabled, "dollhouse: no ceiling");
+            Assert.IsTrue(origin.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>()
+                                .All(p => !p.enabled), "nothing walks or teleports through the model");
+
+            // The model stands in front of the eyes, below them, within reach.
+            var head = origin.Camera.transform.position;
+            var model = Object.FindFirstObjectByType<Gridlock.AR.ARStage>(FindObjectsInactive.Include).ContentPivot.position;
+            var real = origin.transform.InverseTransformVector(model - head); // in real metres
+            Assert.That(real.magnitude, Is.InRange(0.3f, 1.6f), "the model is within reach");
+            Assert.Less(real.y, 0f, "below the eyes");
+            yield return null;
+            GridlockSceneTests.Capture("mr_01_warehouse_on_table");
+
+            // The menu keeps its real size and distance.
+            SystemMenu.Instance.Open();
+            yield return new WaitForSecondsRealtime(0.3f);
+            var menu = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None).First(c => c.name == "Menu (XR)").transform;
+            float realDistance = Vector3.Distance(menu.position, head) / 24f;
+            Assert.That(realDistance, Is.InRange(0.6f, 0.95f), "the menu at arm's length, not inside the eyes");
+            GridlockSceneTests.Capture("mr_02_menu");
+            SystemMenu.Instance.Close();
+            yield return new WaitForSecondsRealtime(0.3f);
+
+            GameSettings.Set(Setting.MixedReality, 0f);
+            yield return null;
+            Assert.IsFalse(mr.Active);
+            Assert.AreEqual(1f, origin.transform.localScale.x, 1e-4f, "life size again");
+            Assert.IsTrue(GameObject.Find("_Shell/Ceiling").GetComponent<Renderer>().enabled, "the room is whole again");
+            Assert.IsFalse(Object.FindFirstObjectByType<Gridlock.AR.ARStage>(FindObjectsInactive.Include).DioramaBase.activeSelf, "no plinth in VR");
         }
     }
 }

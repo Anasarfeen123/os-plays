@@ -19,6 +19,9 @@ namespace Gridlock.Guide
 
         bool placed;
         bool moving;
+        Vector3 baseScale;
+
+        void Awake() => baseScale = transform.localScale;
 
         void OnEnable() => placed = false;
 
@@ -27,12 +30,15 @@ namespace Gridlock.Guide
             var cam = Camera.main;
             if (cam == null) return;
 
+            // Mixed reality scales the world to the model: the panel keeps its real distance and size.
+            float k = Gridlock.XR.QuestMixedReality.WorldScale;
+            transform.localScale = baseScale * k;
             var head = cam.transform.position;
             var forward = Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up);
             if (forward.sqrMagnitude < 1e-4f) forward = Vector3.ProjectOnPlane(cam.transform.up, Vector3.up);
             forward.Normalize();
             var right = Vector3.Cross(Vector3.up, forward);
-            var desired = head + forward * distance + right * side + Vector3.up * height;
+            var desired = head + (forward * distance + right * side + Vector3.up * height) * k;
 
             if (!placed)
             {
@@ -42,12 +48,12 @@ namespace Gridlock.Guide
 
             var toPanel = Vector3.ProjectOnPlane(transform.position - head, Vector3.up);
             float off = Vector3.Angle(forward, toPanel);
-            float range = Mathf.Abs(toPanel.magnitude - distance);
-            if (off > maxAngle || range > 0.6f) moving = true;
+            float range = Mathf.Abs(toPanel.magnitude - distance * k);
+            if (off > maxAngle || range > 0.6f * k) moving = true;
             if (moving)
             {
                 transform.position = Vector3.Lerp(transform.position, desired, 1f - Mathf.Exp(-speed * Time.unscaledDeltaTime));
-                if (Vector3.Distance(transform.position, desired) < 0.03f) moving = false;
+                if (Vector3.Distance(transform.position, desired) < 0.03f * k) moving = false;
             }
 
             var look = transform.position - head;

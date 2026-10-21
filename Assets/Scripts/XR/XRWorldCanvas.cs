@@ -49,7 +49,9 @@ namespace Gridlock.XR
             var forward = Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up);
             if (forward.sqrMagnitude < 1e-4f) forward = Vector3.forward;
             forward.Normalize();
-            transform.position = cam.transform.position + forward * distance - Vector3.up * 0.1f;
+            float k = QuestMixedReality.WorldScale; // mixed reality: real distance and size whatever the model's scale
+            transform.localScale = Vector3.one * (width / size.x) * k;
+            transform.position = cam.transform.position + (forward * distance - Vector3.up * 0.1f) * k;
             transform.rotation = Quaternion.LookRotation(transform.position - cam.transform.position);
         }
     }

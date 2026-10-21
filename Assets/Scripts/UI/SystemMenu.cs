@@ -34,6 +34,7 @@ namespace Gridlock.UI
         [SerializeField] AudioClip clickClip;
 
         AudioSource ui;
+        Vector3 xrViewScale = Vector3.one;
         float savedTimeScale = 1f;
         bool handMenuWasPressed;
         GameObject openView;
@@ -96,6 +97,7 @@ namespace Gridlock.UI
             ui.ignoreListenerPause = true; // the menu must click while the game is paused
             desktopView.SetActive(false);
             xrView.SetActive(false);
+            xrViewScale = xrView.transform.localScale;
             DrawOnTop(xrView);
             MoveToMenuLayer(xrView);
         }
@@ -170,7 +172,7 @@ namespace Gridlock.UI
             openView = xr ? xrView : desktopView;
             if (xr)
             {
-                PlaceInFrontOfPlayer(openView.transform);
+                PlaceInFrontOfPlayer(openView.transform, xrViewScale);
                 RaysIgnoreScene(true);
             }
             openView.SetActive(true);
@@ -264,14 +266,16 @@ namespace Gridlock.UI
         /// <summary>
         /// Within arm's reach (0.75 m) and a little below the eyes, so a fingertip can poke it as well as a ray reach it.
         /// </summary>
-        static void PlaceInFrontOfPlayer(Transform view)
+        static void PlaceInFrontOfPlayer(Transform view, Vector3 baseScale)
         {
             var cam = Camera.main;
             if (cam == null) return;
             var forward = Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up);
             if (forward.sqrMagnitude < 1e-4f) forward = Vector3.forward;
             forward.Normalize();
-            view.position = cam.transform.position + forward * 0.75f - Vector3.up * 0.18f;
+            float k = QuestMixedReality.WorldScale; // mixed reality: the world is scaled to the model, the menu with it
+            view.localScale = baseScale * k;
+            view.position = cam.transform.position + (forward * 0.75f - Vector3.up * 0.18f) * k;
             view.rotation = Quaternion.LookRotation(view.position - cam.transform.position); // tilted towards the eyes
         }
     }

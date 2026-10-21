@@ -15,6 +15,8 @@ namespace Gridlock.Core
         LookSpeed, InvertLook, SmoothTurn, SnapAngle, SmoothMove,
         // Gameplay
         AutoTours, CarSpeed,
+        // Display (added later: kept last so saved values keep their keys)
+        MixedReality,
     }
 
     /// <summary>
@@ -31,6 +33,7 @@ namespace Gridlock.Core
             { Setting.LookSpeed, 0.5f }, { Setting.InvertLook, 0f }, { Setting.SmoothTurn, 0f }, { Setting.SnapAngle, 1f },
             { Setting.SmoothMove, 1f },
             { Setting.AutoTours, 1f }, { Setting.CarSpeed, 1f },
+            { Setting.MixedReality, 0f }, // Quest: passthrough with the scene as a tabletop model
         };
 
         static readonly Dictionary<Setting, float> values = new Dictionary<Setting, float>();

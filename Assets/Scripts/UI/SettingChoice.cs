@@ -36,8 +36,12 @@ namespace Gridlock.UI
 
         void OnEnable() => Refresh();
 
-        /// <summary>Post effects are always off on the Quest (frame rate): the row shows OFF and cannot be changed.</summary>
-        bool Locked => setting == Setting.PostEffects && Gridlock.XR.QuestPerformance.IsStandaloneHeadset;
+        /// <summary>
+        /// Post effects are always off on the Quest (frame rate), and mixed reality needs one: such rows show OFF and cannot
+        /// be changed.
+        /// </summary>
+        bool Locked => (setting == Setting.PostEffects && Gridlock.XR.QuestPerformance.IsStandaloneHeadset) ||
+                       (setting == Setting.MixedReality && !Gridlock.XR.QuestPerformance.IsStandaloneHeadset && !Gridlock.XR.QuestMixedReality.ForceInEditor);
 
         public void Refresh()
         {

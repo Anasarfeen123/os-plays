@@ -51,8 +51,9 @@ public class PlayerFeedbackFollower : MonoBehaviour
             return;
 
         // Phone AR: the AR camera's rig is scaled up to the model's size, and the card stays 30 % as far (and as big) as
-        // in a headset, so it floats between the phone and the model instead of inside it.
-        float k = ar ? playerCamera.lossyScale.x * 0.3f : 1f;
+        // in a headset, so it floats between the phone and the model instead of inside it. Quest mixed reality scales the
+        // rig the same way; there the card keeps its headset distance.
+        float k = ar ? playerCamera.lossyScale.x * 0.3f : Gridlock.XR.QuestMixedReality.WorldScale; // Quest mixed reality: same real size
         transform.localScale = baseScale * k;
         Vector3 targetPosition =
             playerCamera.position

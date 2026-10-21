@@ -78,7 +78,6 @@ namespace Gridlock.AR
         static readonly List<ARRaycastHit> hits = new List<ARRaycastHit>();
         static readonly RaycastHit[] tapHits = new RaycastHit[16];
 
-        readonly List<(Renderer renderer, int sides)> walls = new List<(Renderer, int)>();
         Stage stage = Stage.Checking;
         Vector3 anchor;       // session-space spot the pivot sits on
         float yaw;            // session yaw of the model's +Z
@@ -108,6 +107,10 @@ namespace Gridlock.AR
         public bool Placed => stage == Stage.Placed;
         public float Scale => scale;
         public ARDioramaSettings Settings => settings;
+        /// <summary>The scene point that sits on the surface (Quest mixed reality places the same model).</summary>
+        public Transform ContentPivot => contentPivot;
+        /// <summary>The base under the model: grass slab or plinth, its contact shadow and name plate.</summary>
+        public GameObject DioramaBase => dioramaBase;
 
         public void Init(XROrigin xrOrigin, ARRaycastManager raycastManager, ARPlaneManager planeManager, Camera cam, Transform pivot,
                          Transform placementReticle, GameObject basePlate, GameObject overlay, TMP_Text hintText, TMP_Text scaleText,
@@ -179,7 +182,9 @@ namespace Gridlock.AR
             if (origin.CameraFloorOffsetObject != null) origin.CameraFloorOffsetObject.transform.localPosition = Vector3.zero;
             ScenePlacement.Ready = false;
             EnhancedTouchSupport.Enable();
-            BuildMiniature();
+            diorama = new DioramaView(settings);
+            diorama.Build(transform.parent);
+            foreach (var traffic in FindObjectsByType<AmbientTraffic>(FindObjectsSortMode.None)) traffic.gameObject.SetActive(false);
             RenderSettings.fog = false;
             dioramaBase.SetActive(true);
             Park(); // the phone would start inside the life-size scene: keep it out of sight until the model is placed
@@ -517,7 +522,7 @@ namespace Gridlock.AR
             // A wall cut away for the view, the ceiling, or anything outside the model cannot block a tap behind it.
             var r = col.GetComponent<Renderer>();
             if (r == null) r = col.GetComponentInParent<Renderer>();
-            if (r != null && hiddenSet.Contains(r)) return false;
+            if (r != null && diorama != null && diorama.IsHidden(r)) return false;
             return settings.bounds.Contains(col.bounds.center) || col.GetComponentInParent<IARTappable>() != null;
         }
 
@@ -542,8 +547,6 @@ namespace Gridlock.AR
         // The model: what is shown, the dollhouse cutaway
         // ---------------------------------------------------------------------------------------------------------
 
-        /// <summary>Hidden for AR (outside the model, the ceiling) or cut away right now (walls on the phone's side).</summary>
-        readonly HashSet<Renderer> hiddenSet = new HashSet<Renderer>();
 
         /// <summary>
         /// Before placement the session origin sits 20 km away, beyond the camera's far plane: only the camera feed, the
@@ -593,66 +596,10 @@ namespace Gridlock.AR
                     if (r.enabled) r.enabled = false;
         }
 
-        int lastFacing = -1;
+        DioramaView diorama;
 
         /// <summary>Hide the walls on the sides that face the phone, so it looks into the room from any angle.</summary>
-        void UpdateCutaway(bool force)
-        {
-            if (walls.Count == 0) return;
-            var toCamera = arCamera.transform.position - settings.bounds.center;
-            toCamera.y = 0f;
-            int facing = 0;
-            if (toCamera.sqrMagnitude > 1e-6f)
-            {
-                toCamera.Normalize();
-                const float threshold = 0.3f; // about 72°: a side counts as facing until the phone is well past its corner
-                if (-toCamera.x > threshold) facing |= 1;
-                if (toCamera.x > threshold) facing |= 2;
-                if (-toCamera.z > threshold) facing |= 4;
-                if (toCamera.z > threshold) facing |= 8;
-            }
-            if (!force && facing == lastFacing) return;
-            lastFacing = facing;
-            foreach (var (r, sides) in walls)
-            {
-                if (r == null) continue;
-                bool cut = (sides & facing) != 0;
-                r.enabled = !cut;
-                if (cut) hiddenSet.Add(r); else hiddenSet.Remove(r);
-            }
-        }
-
-        /// <summary>
-        /// The life-size scene runs on far past the model; in AR it ends at its base. Leaves out the ceiling too, and sorts
-        /// the walls by the side of the model they stand on.
-        /// </summary>
-        void BuildMiniature()
-        {
-            walls.Clear();
-            hiddenSet.Clear();
-            var box = settings.bounds;
-            foreach (var r in FindObjectsByType<Renderer>(FindObjectsSortMode.None))
-            {
-                if (r.transform.IsChildOf(transform.parent) || !r.enabled) continue; // the AR rig itself (reticle, planes)
-                if (r.GetComponentInParent<Canvas>() != null) continue; // world UI draws through its canvas
-                var b = r.bounds;
-                // Outside the model, bigger than it (a 200 m ground or a starfield), or the ceiling: not part of it.
-                if (!box.Contains(b.center) || b.size.x > box.size.x * 1.05f || b.size.z > box.size.z * 1.05f || b.min.y >= settings.ceilingCut - 0.01f)
-                {
-                    r.enabled = false;
-                    hiddenSet.Add(r);
-                    continue;
-                }
-                if (settings.cutawayBand <= 0f || b.max.y < settings.cutawayMinHeight) continue;
-                int sides = 0;
-                if (b.center.x - box.min.x < settings.cutawayBand) sides |= 1;
-                if (box.max.x - b.center.x < settings.cutawayBand) sides |= 2;
-                if (b.center.z - box.min.z < settings.cutawayBand) sides |= 4;
-                if (box.max.z - b.center.z < settings.cutawayBand) sides |= 8;
-                if (sides != 0) walls.Add((r, sides));
-            }
-            foreach (var traffic in FindObjectsByType<AmbientTraffic>(FindObjectsSortMode.None)) traffic.gameObject.SetActive(false);
-        }
+        void UpdateCutaway(bool force) => diorama?.UpdateCutaway(arCamera.transform.position, force);
 
         static bool TappedOutsideUI(out Vector2 position)
         {

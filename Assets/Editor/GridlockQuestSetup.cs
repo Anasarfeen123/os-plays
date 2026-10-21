@@ -38,6 +38,8 @@ namespace Gridlock.Editor
             "MetaHandTrackingAim",
             "FoveatedRenderingFeature",
             "XrPerformanceSettingsFeature", // GPU clock hints (QuestFrameBudget)
+            "ARSessionFeature",             // Meta OpenXR: the session behind passthrough (Settings → MIXED REALITY)
+            "ARCameraFeature",              // Meta OpenXR: passthrough
         };
 
         [MenuItem("GRIDLOCK/Configure for Meta Quest 2")]

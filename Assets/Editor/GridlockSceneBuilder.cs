@@ -915,6 +915,7 @@ namespace Gridlock.Editor
             BuildControllerHands(rig);
             TunePinchAndRays(rig);
             rig.AddComponent<ComfortTurn>().Init(origin);
+            rig.AddComponent<QuestMixedReality>().Init(origin); // Settings → MIXED REALITY: passthrough, tabletop model
             if (seated) MakeSeated(rig);
             if (buildXRControls != null) BuildXRControls(rig, buildXRControls);
             else BuildMenuShortcut(rig);
@@ -995,7 +996,7 @@ namespace Gridlock.Editor
         }
 
         /// <summary>
-        /// Hand pinch and pointing rays. The hands demo registers a pinch only at 100 % pinch strength and drops it below
+        /// Hand pinch, finger pokes and pointing rays. The hands demo registers a pinch only at 100 % pinch strength and drops it below
         /// 90 %; Quest's pinch strength is noisy and often peaks just under 1, so pinches were missed and pinch-drags let
         /// go on their own. A pinch now starts at 80 % and holds down to 50 %. Every far ray (hands and controllers) is
         /// stabilised so the small hand movement of a pinch or trigger pull does not knock it off a button.
@@ -1008,6 +1009,16 @@ namespace Gridlock.Editor
                 so.FindProperty("m_PressThreshold").floatValue = 0.8f;
                 so.FindProperty("m_ReleaseThreshold").floatValue = 0.5f;
                 so.ApplyModifiedPropertiesWithoutUndo();
+            }
+            // Finger pokes: a fingertip is wider than the default 7.5 mm probe and tracked hands jitter, so small buttons
+            // (keypad keys, settings segments, quiz answers) were easy to miss or to press two at once. A wider probe and
+            // select width, and hover from 2.5 cm, make them land.
+            foreach (var poke in rig.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRPokeInteractor>(true))
+            {
+                poke.pokeWidth = 0.012f;
+                poke.pokeSelectWidth = 0.025f;
+                poke.pokeHoverRadius = 0.025f;
+                EditorUtility.SetDirty(poke);
             }
             foreach (var nearFar in rig.GetComponentsInChildren<NearFarInteractor>(true))
             {
