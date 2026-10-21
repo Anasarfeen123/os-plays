@@ -25,11 +25,13 @@ cd "$ROOT"
 pgrep -f -- "-projectPath[= ]$ROOT( |$)" >/dev/null && die "Unity has the project open; close it first"
 pgrep -fa "Editor/Unity" | grep -q -- "-projectPath \." && die "a Unity batch job is running; wait for it"
 
+# The builds regenerate the scenes and write the version into the project, so they start from a clean tree (a dry run
+# then puts it back as it was).
+[[ -z "$(git status --porcelain --untracked-files=no)" ]] || die "commit or stash your changes first"
 if [[ -z "$DRY_RUN" ]]; then
     command -v gh >/dev/null || die "gh (GitHub CLI) is not installed"
     gh auth status >/dev/null 2>&1 || die "gh is not logged in (gh auth login)"
     [[ "$(git branch --show-current)" == "main" ]] || die "releases are made from main"
-    [[ -z "$(git status --porcelain --untracked-files=no)" ]] || die "commit or stash your changes first"
     git fetch -q origin main
     [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] || die "main is not in step with origin/main (pull or push first)"
     git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && die "tag $TAG already exists"
@@ -65,7 +67,11 @@ build Quest # last: both builds rewrite the shared Android XR loader settings, a
 
 echo "release: built"
 ls -la "$OUT"/*"$TAG".apk
-[[ -n "$DRY_RUN" ]] && { echo "release: dry run, nothing published"; git status --short --untracked-files=no; exit 0; }
+if [[ -n "$DRY_RUN" ]]; then
+    git checkout -q -- Assets ProjectSettings # what the builds regenerated
+    echo "release: dry run, nothing published"
+    exit 0
+fi
 
 # The builds write the version into the project settings and regenerate the scenes: record that as the release commit.
 git add -A ProjectSettings Assets
