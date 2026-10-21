@@ -330,6 +330,15 @@ namespace Gridlock.Tests
             var slots = Field<Transform[]>(manager, "frameSlots");
             Assert.AreEqual(slots[0], box.transform.parent, "page loaded into frame 1");
             GridlockSceneTests.Capture("ar_memory_03_loaded");
+
+            // PHOTO saves the camera view with the model and no HUD.
+            var photo = UnityEngine.Object.FindFirstObjectByType<ARPhoto>();
+            yield return photo.Take();
+            Assert.IsTrue(System.IO.File.Exists(photo.LastSaved), "the photo is saved");
+            var saved = new Texture2D(2, 2);
+            saved.LoadImage(System.IO.File.ReadAllBytes(photo.LastSaved));
+            Assert.AreEqual(Screen.width, saved.width, "full screen");
+            System.IO.File.Delete(photo.LastSaved);
         }
     }
 }

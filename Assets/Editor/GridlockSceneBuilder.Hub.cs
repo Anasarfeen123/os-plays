@@ -971,6 +971,24 @@ namespace Gridlock.Editor
                      "PAGE REPLACEMENT", "ENTER SIMULATION", ThumbSprite(MemoryThumbPath), MemorySceneName, false, new Color(0.98f, 0.45f, 0.2f)),
             };
 
+            // Progress: a strip across the bottom of each card's picture, and the module total beside SYSTEM ONLINE.
+            var strips = new TMP_Text[tiles.Length];
+            var stripKeys = new[] { "deadlock,banker", "cpu", "memory" };
+            for (int i = 0; i < tiles.Length; i++)
+            {
+                var tileT = tiles[i].transform;
+                var strip = Panel("ProgressStrip", tileT, 20, 266, 520, 44, new Color(0.02f, 0.04f, 0.08f, 0.82f));
+                strip.GetComponent<Image>().raycastTarget = false;
+                var stripText = UIText("Text", strip.transform, 12, 0, 496, 44, "", 19, ViewColor.Text, TextAlignmentOptions.Center, FontStyles.Bold);
+                stripText.enableAutoSizing = true;
+                stripText.fontSizeMin = 12f;
+                stripText.fontSizeMax = 19f;
+                stripText.textWrappingMode = TextWrappingModes.NoWrap;
+                strips[i] = stripText;
+            }
+            var overallProgress = UIText("ModuleProgress", c, 1340, 900, 520, 44, "", 26, Muted, TextAlignmentOptions.Right, FontStyles.Bold);
+            canvas.AddComponent<HubProgressDisplay>().Init(overallProgress, strips, stripKeys);
+
             var console = UIText("Console", c, 60, 822, 1240, 190, "", 25, new Color(0.62f, 0.8f, 0.9f), TextAlignmentOptions.BottomLeft);
             console.lineSpacing = 6f;
             UIText("Status", c, 1340, 840, 520, 60, "<color=#22C55E>●</color> SYSTEM ONLINE", 30, Muted, TextAlignmentOptions.Right, FontStyles.Bold);

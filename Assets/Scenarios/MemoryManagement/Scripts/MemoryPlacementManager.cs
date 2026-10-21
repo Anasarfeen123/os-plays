@@ -79,6 +79,19 @@ public class MemoryPlacementManager : MonoBehaviour
         Show("Select an algorithm to begin.", FeedbackType.Normal);
     }
 
+    /// <summary>
+    /// GRIDLOCK: play a different reference string (pages 1–6, the boxes there are) with the current algorithm. Shows the
+    /// whole string, since the screen otherwise only names the next page.
+    /// </summary>
+    public void SetReferenceString(int[] pages)
+    {
+        referenceString = pages;
+        ResetGame();
+        Show($"Reference string: {string.Join(" ", pages)}\nPlace page {CurrentPage()}.", FeedbackType.Normal);
+    }
+
+    public int[] ReferenceString => referenceString;
+
     // GRIDLOCK: read by the guided tour.
     public int ReferenceIndex => referenceIndex;
     public int Faults => faults;

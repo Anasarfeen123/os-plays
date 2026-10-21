@@ -55,6 +55,7 @@ namespace Gridlock.XR
             bool simulate = Application.isEditor && (simulateXRInEditor || ForceSimulatorInEditor) && !headset && simulatorPrefab != null;
             bool phoneAR = arRig != null && !headset && !simulate &&
                            (Application.isEditor ? ForceARInEditor : Application.platform == RuntimePlatform.Android);
+            Progress.MarkVisited(gameObject.scene.name);
             XRActive = headset || simulate;
             ARActive = phoneAR;
             Current = this;

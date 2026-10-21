@@ -126,6 +126,7 @@ namespace Gridlock.Editor
 
             var camera = Object.FindObjectsByType<DesktopCameraController>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault();
             tour.InitTour(steps, BuildGuideMarker(root.transform), desktopScreen, xrScreen, mode, camera);
+            tour.InitQuiz(Quiz(tour.TourKey), BuildQuizScreen(dock.transform, tour), BuildQuizScreen(xrCanvas.transform, tour));
             return tour;
         }
 
@@ -144,7 +145,57 @@ namespace Gridlock.Editor
             return tour;
         }
 
-        const float GuideW = 1000f, GuideH = 470f;
+        const float GuideW = 1000f, GuideH = 470f, QuizH = 560f;
+
+        [Serializable]
+        class QuizFile
+        {
+            public QuizSet[] quizzes;
+        }
+
+        [Serializable]
+        class QuizSet
+        {
+            public string key;
+            public NarratedTour.QuizQuestion[] questions;
+        }
+
+        /// <summary>A tour's quick-check questions from Assets/Data/quizzes.json.</summary>
+        static NarratedTour.QuizQuestion[] Quiz(string key)
+        {
+            var file = JsonUtility.FromJson<QuizFile>(File.ReadAllText("Assets/Data/quizzes.json"));
+            return file.quizzes.FirstOrDefault(q => q.key == key)?.questions ?? throw new InvalidOperationException($"quizzes.json has no quiz '{key}'");
+        }
+
+        /// <summary>The quick check, on the guide screen's spot: a question, three answers, the explanation, NEXT.</summary>
+        static QuizScreen BuildQuizScreen(Transform parent, NarratedTour tour)
+        {
+            var panel = Bordered("QuizPanel", parent, 0, 0, GuideW, QuizH, Opaque(ViewColor.Panel), Amber);
+            var t = panel.transform;
+            var header = UIText("Header", t, 30, 20, 940, 40, "", 24, GuideCyan, TextAlignmentOptions.Left, FontStyles.Bold);
+            header.characterSpacing = 4f;
+            var question = UIText("Question", t, 30, 64, 940, 96, "", 34, ViewColor.Text, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+            question.enableAutoSizing = true;
+            question.fontSizeMin = 22f;
+            question.fontSizeMax = 34f;
+            var options = new Button[3];
+            var labels = new TMP_Text[3];
+            for (int i = 0; i < 3; i++)
+            {
+                var (button, label) = UIButton($"Option{i + 1}", t, 30, 168 + i * 80, 940, 70, "", 28, new Color(0.16f, 0.21f, 0.32f), ViewColor.Text);
+                label.fontSizeMin = 16f;
+                label.textWrappingMode = TextWrappingModes.Normal;
+                options[i] = button;
+                labels[i] = label;
+            }
+            var feedback = UIText("Feedback", t, 30, 412, 700, 136, "", 25, ViewColor.Text, TextAlignmentOptions.TopLeft);
+            feedback.textWrappingMode = TextWrappingModes.Normal;
+            var (next, nextLabel) = UIButton("NextButton", t, 750, 476, 220, 66, "NEXT ►", 28, GuideCyan, new Color(0.04f, 0.07f, 0.12f));
+            // Hosted on the parent: the panel starts hidden, and an inactive object would never run Awake.
+            var screen = parent.gameObject.AddComponent<QuizScreen>();
+            screen.Init(tour, panel, header, question, options, labels, feedback, next, nextLabel);
+            return screen;
+        }
 
         /// <summary>Guide screen content laid out in a GuideW × GuideH px box under <paramref name="parent"/>.</summary>
         static GuideScreen BuildGuideScreen(Transform parent, NarratedTour tour, TourEnd endInfo)

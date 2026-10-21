@@ -27,6 +27,8 @@ public class MemoryScenarioAdapter : MonoBehaviour
     [Tooltip("The frames' drop volumes (headset).")]
     [SerializeField] MemoryFrameZone[] zones;
     [SerializeField] Transform carryAnchor;
+    [Tooltip("Face buttons and the AR action buttons: A loads a new reference string.")]
+    [SerializeField] ScenarioButtons buttons;
     [Tooltip("A released box at rest this far from its table spot for this long goes back to the table.")]
     [SerializeField] float strayDistance = 0.3f;
     [SerializeField] float straySeconds = 1.2f;
@@ -50,6 +52,7 @@ public class MemoryScenarioAdapter : MonoBehaviour
         foreach (var reset in FindObjectsByType<BoxResetManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             reset.SetExternallyManaged(true);
 
+        if (buttons != null) buttons.A += NewString;
         var mode = XRModeController.Current;
         xr = mode != null && mode.XRActive;
         ar = mode != null && mode.ARActive;
@@ -77,7 +80,42 @@ public class MemoryScenarioAdapter : MonoBehaviour
             if (frames[i] != null) frames[i].gameObject.AddComponent<MemoryFrameTarget>().Init(this, frameIndices[i]);
     }
 
-    void OnDestroy() => Gridlock.AR.ARStage.InfoProviders.Remove(Describe);
+    void OnDestroy()
+    {
+        Gridlock.AR.ARStage.InfoProviders.Remove(Describe);
+        if (buttons != null) buttons.A -= NewString;
+    }
+
+    /// <summary>
+    /// The next reference string to play: the original, the classic 12-page string (the one that shows Belady's anomaly
+    /// with 4 frames), a longer mixed one, then random ones over pages 1–6.
+    /// </summary>
+    static readonly int[][] Strings =
+    {
+        new[] { 1, 2, 3, 4, 1, 2 },
+        new[] { 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5 },
+        new[] { 1, 2, 3, 2, 4, 1, 5, 2, 1, 6, 3, 2 },
+    };
+
+    int stringIndex;
+
+    public void NewString()
+    {
+        if (carried != null) PutBack();
+        stringIndex++;
+        int[] next;
+        if (stringIndex < Strings.Length) next = Strings[stringIndex];
+        else
+        {
+            next = new int[10];
+            for (int i = 0; i < next.Length; i++)
+            {
+                do next[i] = Random.Range(1, 7);
+                while (i > 0 && next[i] == next[i - 1]); // no immediate repeats: every reference teaches something
+            }
+        }
+        manager.SetReferenceString(next);
+    }
 
     /// <summary>The info card for a tapped page box or frame pallet (phone AR).</summary>
     (string title, string body)? Describe(Collider hit)
@@ -110,6 +148,9 @@ public class MemoryScenarioAdapter : MonoBehaviour
             WatchStrayBoxes();
             return;
         }
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (keyboard != null && keyboard.nKey.wasPressedThisFrame) NewString(); // desktop: N for a new reference string
+
         // The manager can take a carried box away (it evicted that page): it is no longer in hand.
         if (carried != null && carried.transform.parent != carryAnchor)
         {

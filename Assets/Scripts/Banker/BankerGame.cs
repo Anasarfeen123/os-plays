@@ -69,6 +69,7 @@ namespace Gridlock.Banker
         {
             if (Locked) return;
             if (Verdict == null) return;
+            if (!InChallengeMode) Gridlock.Core.Progress.RecordBankerLevel(level + 1); // the control room shows the levels cleared
             level++;
             Load();
         }

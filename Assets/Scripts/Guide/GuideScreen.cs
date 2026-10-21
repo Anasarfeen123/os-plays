@@ -159,6 +159,13 @@ namespace Gridlock.Guide
             SetProgress(1f);
         }
 
+        /// <summary>Out of the way while the quiz uses the spot.</summary>
+        public void Hide()
+        {
+            panel.SetActive(false);
+            pill.SetActive(false);
+        }
+
         public void Collapse()
         {
             panel.SetActive(false);

@@ -247,6 +247,25 @@ namespace Gridlock.Tests
         }
 
         [UnityTest]
+        public IEnumerator Memory_NewString_PlaysADifferentReferenceString()
+        {
+            yield return Load("GridlockMemory");
+            var manager = Find("MemoryPlacementManager");
+            var adapter = Find("MemoryScenarioAdapter");
+            Assert.AreEqual(6, Field<int[]>(manager, "referenceString").Length, "the original string");
+            Object.FindFirstObjectByType<ScenarioButtons>().PressA(); // A in a headset, NEW STRING in AR
+            yield return null;
+            var classic = Field<int[]>(manager, "referenceString");
+            CollectionAssert.AreEqual(new[] { 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5 }, classic, "the classic 12-page string");
+            Assert.AreEqual(0, Field<int>(manager, "referenceIndex"), "from the start");
+            Call(adapter, "NewString");
+            Call(adapter, "NewString");
+            var random = Field<int[]>(manager, "referenceString");
+            Assert.AreEqual(10, random.Length, "then random strings");
+            Assert.IsTrue(random.All(p => p >= 1 && p <= 6), "only pages there are boxes for");
+        }
+
+        [UnityTest]
         public IEnumerator Memory_Desktop_CarryBoxToFrame()
         {
             yield return Load("GridlockMemory");

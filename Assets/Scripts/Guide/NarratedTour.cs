@@ -25,6 +25,16 @@ namespace Gridlock.Guide
             public AudioClip clip;
         }
 
+        /// <summary>One quick-check question after the tour (Assets/Data/quizzes.json).</summary>
+        [Serializable]
+        public class QuizQuestion
+        {
+            public string question;
+            public string[] options;
+            public int correct;
+            [TextArea] public string why;
+        }
+
         static readonly HashSet<string> seen = new HashSet<string>();
 
         public static bool IsSeen(string key) => seen.Contains(key);
@@ -44,6 +54,9 @@ namespace Gridlock.Guide
         [SerializeField] GuideScreen xrScreen;
         [SerializeField] XRModeController xrMode;
         [SerializeField] protected DesktopCameraController desktopCamera;
+        [SerializeField] QuizQuestion[] quiz = new QuizQuestion[0];
+        [SerializeField] QuizScreen desktopQuiz;
+        [SerializeField] QuizScreen xrQuiz;
 
         AudioSource voice;
         Coroutine routine;
@@ -54,11 +67,17 @@ namespace Gridlock.Guide
         int spokenSteps;
 
         public bool Running { get; private set; }
+        /// <summary>The quick check after the tour is up.</summary>
+        public bool Quizzing { get; private set; }
+        public int QuizScore { get; private set; }
         public string CurrentStep { get; private set; }
         public event Action Finished;
 
         /// <summary>Session key: a tour runs by itself only on the first visit.</summary>
         protected abstract string Key { get; }
+
+        /// <summary>The tour's key (its quiz and progress entries).</summary>
+        public string TourKey => Key;
 
         /// <summary>The tour itself, step by step.</summary>
         protected abstract IEnumerator Script();
@@ -79,6 +98,13 @@ namespace Gridlock.Guide
         protected virtual string HandsOnStep => null;
 
         int StepCount => steps.Count(s => Counted(s.id));
+
+        public void InitQuiz(QuizQuestion[] questions, QuizScreen desktop, QuizScreen xr)
+        {
+            quiz = questions;
+            desktopQuiz = desktop;
+            xrQuiz = xr;
+        }
 
         public void InitTour(Step[] tourSteps, GuideMarker guideMarker, GuideScreen desktop, GuideScreen xr, XRModeController mode,
                              DesktopCameraController camera)
@@ -127,6 +153,12 @@ namespace Gridlock.Guide
 
         public void Replay()
         {
+            if (Quizzing)
+            {
+                if (quizRoutine != null) StopCoroutine(quizRoutine);
+                ForQuizzes(s => s.Hide());
+                Quizzing = false;
+            }
             if (Running) Stop(finished: false);
             Begin();
         }
@@ -182,9 +214,71 @@ namespace Gridlock.Guide
             if (finished)
             {
                 Debug.Log($"[GRIDLOCK] {GetType().Name} finished in {Time.time - tourStart:F0} s");
-                ForScreens(s => s.ShowEnd());
-                Finished?.Invoke();
+                Progress.MarkTourDone(Key);
+                if (quiz != null && quiz.Length > 0 && (desktopQuiz != null || xrQuiz != null)) quizRoutine = StartCoroutine(RunQuiz());
+                else EndScreen();
             }
+        }
+
+        void EndScreen()
+        {
+            ForScreens(s => s.ShowEnd());
+            Finished?.Invoke();
+        }
+
+        // ---------------------------------------------------------------------------------------------------------
+        // The quick check after the tour
+        // ---------------------------------------------------------------------------------------------------------
+
+        int answer = -1;
+        bool advance;
+        Coroutine quizRoutine;
+
+        /// <summary>An answer button on a quiz screen.</summary>
+        public void Answer(int choice)
+        {
+            if (Quizzing && answer < 0) answer = choice;
+        }
+
+        /// <summary>NEXT / SCORE / CONTINUE on a quiz screen.</summary>
+        public void QuizNext()
+        {
+            if (Quizzing) advance = true;
+        }
+
+        IEnumerator RunQuiz()
+        {
+            Quizzing = true;
+            QuizScore = 0;
+            ForScreens(s => s.Hide());
+            for (int i = 0; i < quiz.Length; i++)
+            {
+                var q = quiz[i];
+                int number = i + 1;
+                answer = -1;
+                advance = false;
+                ForQuizzes(s => s.ShowQuestion(q, number, quiz.Length));
+                yield return new WaitUntil(() => answer >= 0);
+                if (answer == q.correct) QuizScore++;
+                bool last = i == quiz.Length - 1;
+                ForQuizzes(s => s.ShowAnswer(q, answer, last));
+                yield return new WaitUntil(() => advance);
+            }
+            int best = Mathf.Max(QuizScore, Progress.QuizBest(Key));
+            Progress.RecordQuiz(Key, QuizScore);
+            Debug.Log($"[GRIDLOCK] {GetType().Name} quiz {QuizScore}/{quiz.Length}");
+            advance = false;
+            ForQuizzes(s => s.ShowScore(QuizScore, quiz.Length, best));
+            yield return new WaitUntil(() => advance);
+            ForQuizzes(s => s.Hide());
+            Quizzing = false;
+            EndScreen();
+        }
+
+        void ForQuizzes(Action<QuizScreen> action)
+        {
+            if (desktopQuiz != null) action(desktopQuiz);
+            if (xrQuiz != null) action(xrQuiz);
         }
 
         // ---------------------------------------------------------------------------------------------------------

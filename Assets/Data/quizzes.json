@@ -1,0 +1,96 @@
+{
+    "quizzes": [
+        {
+            "key": "deadlock",
+            "questions": [
+                {
+                    "question": "Which four conditions must all hold for a deadlock?",
+                    "options": ["Starvation, aging, priority and preemption", "Mutual exclusion, hold and wait, no preemption and circular wait", "Mutual exclusion, paging, swapping and circular wait"],
+                    "correct": 1,
+                    "why": "Take away any one of the four (for example, allow preemption) and a deadlock cannot form."
+                },
+                {
+                    "question": "What does the wait-for graph show when the lot is deadlocked?",
+                    "options": ["A cycle: each car waits for the next, and the last waits for the first", "A single car with no arrows", "Arrows that all point to the exit"],
+                    "correct": 0,
+                    "why": "A cycle in the wait-for graph is exactly a circular wait, so detection looks for cycles."
+                },
+                {
+                    "question": "Towing a car to break the jam is which recovery method?",
+                    "options": ["Adding more resources", "Avoidance with the Banker's algorithm", "Preemption: taking a resource away from a process"],
+                    "correct": 2,
+                    "why": "The towed car loses its bay (its resource), which lets the others move again."
+                }
+            ]
+        },
+        {
+            "key": "banker",
+            "questions": [
+                {
+                    "question": "When does the Banker's algorithm grant a request?",
+                    "options": ["Whenever enough bays are free right now", "Only if the system is still in a safe state afterwards", "Only for the fleet with the smallest need"],
+                    "correct": 1,
+                    "why": "Free bays are not enough: after granting, there must still be an order in which every fleet can finish."
+                },
+                {
+                    "question": "How is a fleet's Need worked out?",
+                    "options": ["Max minus Allocation", "Allocation minus Available", "Max plus Available"],
+                    "correct": 0,
+                    "why": "Need is what a fleet may still ask for: its declared maximum minus what it already holds."
+                },
+                {
+                    "question": "What does it mean for the state to be safe?",
+                    "options": ["No fleet is waiting at the moment", "Every bay is free", "There is some order in which every fleet can get its maximum and finish"],
+                    "correct": 2,
+                    "why": "That order is the safe sequence the safety check searches for."
+                }
+            ]
+        },
+        {
+            "key": "cpu",
+            "questions": [
+                {
+                    "question": "Which algorithm can take the CPU away when a shorter job arrives?",
+                    "options": ["First come, first served", "Shortest remaining time first", "Non-preemptive priority"],
+                    "correct": 1,
+                    "why": "SRTF is preemptive: it always runs the process with the least work left."
+                },
+                {
+                    "question": "A process's waiting time is…",
+                    "options": ["its turnaround time minus its burst time", "its completion time minus its arrival time", "its burst time minus its arrival time"],
+                    "correct": 0,
+                    "why": "Turnaround is the whole stay in the system; take away the time spent running and what remains is waiting."
+                },
+                {
+                    "question": "What does Round Robin give each process?",
+                    "options": ["The CPU until it finishes", "A share based only on its priority", "A fixed time slice (quantum), in turn"],
+                    "correct": 2,
+                    "why": "When the quantum runs out, the process goes to the back of the ready queue: fair to everyone."
+                }
+            ]
+        },
+        {
+            "key": "memory",
+            "questions": [
+                {
+                    "question": "When does a page fault happen?",
+                    "options": ["When the page the program needs is not in any frame", "When a frame is empty", "When two pages have the same number"],
+                    "correct": 0,
+                    "why": "The page must then be brought in from disk, which is slow: that is why fewer faults is better."
+                },
+                {
+                    "question": "Which page does FIFO evict?",
+                    "options": ["The one used least recently", "The one that has been in memory the longest", "The one needed furthest in the future"],
+                    "correct": 1,
+                    "why": "First in, first out: the oldest arrival leaves, even if it is used often."
+                },
+                {
+                    "question": "Which policy has the fewest faults, but cannot be built in a real system?",
+                    "options": ["LRU", "FIFO", "Optimal"],
+                    "correct": 2,
+                    "why": "Optimal needs to know the future reference string; it is the yardstick the others are measured against."
+                }
+            ]
+        }
+    ]
+}

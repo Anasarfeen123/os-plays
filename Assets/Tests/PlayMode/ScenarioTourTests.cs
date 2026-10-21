@@ -27,6 +27,7 @@ namespace Gridlock.Tests
             GameSettings.AutoTours = true;
             NarratedTour.SetSeen("cpu", false);
             NarratedTour.SetSeen("memory", false);
+            Progress.ResetAll();
         }
 
         [TearDown]
@@ -124,7 +125,36 @@ namespace Gridlock.Tests
             Assert.GreaterOrEqual((int)Get(manager, "Faults"), 4);
             yield return WaitFor(() => !tour.Running, 60f, "the end of the tour");
             Time.timeScale = 1f;
-            GridlockSceneTests.Capture("tour_memory_02_end");
+            Assert.IsTrue(Progress.TourDone("memory"), "the finished tour is remembered");
+
+            // The quick check: two right, one wrong.
+            Assert.IsTrue(tour.Quizzing, "a quiz follows the tour");
+            var quiz = (NarratedTour.QuizQuestion[])typeof(NarratedTour).GetField("quiz", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(tour);
+            Assert.AreEqual(3, quiz.Length);
+            for (int i = 0; i < quiz.Length; i++)
+            {
+                yield return null;
+                tour.Answer(i == 2 ? (quiz[i].correct + 1) % quiz[i].options.Length : quiz[i].correct);
+                yield return null;
+                if (i == 0) GridlockSceneTests.Capture("tour_memory_02_quiz_answered");
+                tour.QuizNext();
+            }
+            yield return null;
+            Assert.AreEqual(2, tour.QuizScore);
+            GridlockSceneTests.Capture("tour_memory_03_quiz_score");
+            tour.QuizNext();
+            yield return null;
+            Assert.IsFalse(tour.Quizzing);
+            Assert.AreEqual(2, Progress.QuizBest("memory"), "the score is kept");
+
+            // The control room shows it on the memory card.
+            SceneManager.LoadScene("GridlockHub");
+            yield return new WaitForSeconds(2f);
+            var display = Object.FindFirstObjectByType<Gridlock.Hub.HubProgressDisplay>();
+            var strips = (TMPro.TMP_Text[])typeof(Gridlock.Hub.HubProgressDisplay).GetField("strips", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(display);
+            StringAssert.Contains("QUIZ 2/3", strips[2].text, "the memory card shows the quiz score");
+            StringAssert.Contains("TOUR DONE", strips[2].text);
+            StringAssert.Contains("NOT STARTED", strips[1].text, "the CPU lab was not visited in this test");
         }
     }
 }

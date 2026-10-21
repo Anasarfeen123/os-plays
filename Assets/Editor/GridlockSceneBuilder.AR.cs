@@ -413,6 +413,18 @@ namespace Gridlock.Editor
             foreach (var g in infoPanel.GetComponentsInChildren<UnityEngine.UI.Graphic>(true)) g.raycastTarget = false;
             info.gameObject.AddComponent<ARInfoCard>().Init(info.gameObject.AddComponent<CanvasGroup>(), infoTitle, infoBody);
 
+            // PHOTO on the left edge, between the guide panel and the info card (the lots' side panel covers the right edge):
+            // the camera view with the model, no HUD. A white flash confirms it.
+            var photoBox = Anchored("Photo", root.transform, new Vector2(0f, 0.5f), new Vector2(24f + 70f, -40f), new Vector2(140f, 140f));
+            var (photo, _) = UIButton("PhotoButton", photoBox, 0, 0, 140, 140, "PHOTO", 26, new Color(0.04f, 0.07f, 0.12f, 0.85f), ViewColor.Text);
+            var flashGo = new GameObject("Photo Flash", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            var flashRect = (RectTransform)flashGo.transform;
+            flashRect.SetParent(root.transform, false);
+            flashRect.anchorMin = Vector2.zero;
+            flashRect.anchorMax = Vector2.one;
+            flashRect.offsetMin = flashRect.offsetMax = Vector2.zero;
+            root.AddComponent<ARPhoto>().Init(photo, flashGo.GetComponent<UnityEngine.UI.Image>());
+
             var helpBar = Anchored("Help Bar", root.transform, new Vector2(0.5f, 0f), new Vector2(0f, 46f), new Vector2(1100f, 56f));
             var bar = Panel("Background", helpBar, 0, 0, 1100, 56, new Color(0.04f, 0.06f, 0.1f, 0.82f));
             bar.GetComponent<UnityEngine.UI.Image>().raycastTarget = false;

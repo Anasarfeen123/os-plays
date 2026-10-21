@@ -128,7 +128,7 @@ namespace Gridlock.Editor
 
             var glue = new GameObject("GRIDLOCK Scenario");
             var buttons = glue.AddComponent<ScenarioButtons>();
-            buttons.Init(null, null, null); // grabbing and the screens are all there is
+            buttons.Init("New string", null, null); // A: a new reference string; the rest is grabbing and the screens
 
             BuildSystems();
             var (mode, rig) = BuildScenarioPresentation(player, buttons);
@@ -177,7 +177,7 @@ namespace Gridlock.Editor
             var zones = Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Where(b => b.GetType().Name == "MemoryFrameZone").ToArray();
             RegroupFramePallets(zones);
-            var adapter = AddScenarioComponent(glue, "MemoryScenarioAdapter", ("manager", manager), ("carryAnchor", view.transform));
+            var adapter = AddScenarioComponent(glue, "MemoryScenarioAdapter", ("manager", manager), ("carryAnchor", view.transform), ("buttons", buttons));
             var so = new SerializedObject(adapter);
             SetArray(so.FindProperty("boxes"), boxes.Count, (p, i) => p.objectReferenceValue = boxes[i]);
             SetArray(so.FindProperty("pages"), pages.Count, (p, i) => p.intValue = pages[i]);
@@ -537,6 +537,7 @@ namespace Gridlock.Editor
             "front of the rack below it. A wrong frame sends the box back to its table. Press the screens with the ray (trigger).\n" +
             "<b>Desktop</b>  WASD walk, mouse look, <b>E</b> or click a box to pick it up, then a pallet to put it there.\n" +
             "<b>Phone</b>  drag to look, two fingers to walk, tap a box, then a pallet.\n" +
+            "<b>A new reference string</b>  N on a keyboard, <b>A</b> in a headset, NEW STRING in phone AR.\n" +
             HeadsetHowTo;
     }
 }
