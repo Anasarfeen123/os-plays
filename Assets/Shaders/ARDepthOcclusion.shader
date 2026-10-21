@@ -24,7 +24,7 @@ Shader "OSPlays/ARDepthOcclusion"
             #pragma fragment frag
             #include "UnityCG.cginc"
 
-            sampler2D _EnvironmentDepth;          // set globally by ARShaderOcclusion (metres)
+            sampler2D _EnvironmentDepth;          // ARCore environment depth in metres (set by ARDepthOcclusion)
             float4x4 _OcclusionDisplayTransform;  // the camera frame's display matrix
             float _OcclusionScale;                // world units per real metre (the AR rig's scale)
             float _OcclusionBiasMin;

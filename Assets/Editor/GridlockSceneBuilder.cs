@@ -1231,6 +1231,10 @@ namespace Gridlock.Editor
             ModeButton(dockT, x + w - 200f, 38f, 180f, 52f, modeLabel, 22, modeScene);
             UIText("Subtitle", dockT, x + 24f, 92f, w - 40f, 30f, subtitle, 20, Muted, TextAlignmentOptions.Left);
             ModeButton(hud.transform, 16f, 16f, 170f, 52f, "◄ ROOM", 22, HubSceneName); // back to the hub, top-left
+
+            // Phones: a tab on the panel's inner edge folds it off the right edge (it covers half of an AR model).
+            var (tab, tabLabel) = UIButton("FoldTab", dockT, x - 64f, 440f, 60f, 150f, "►", 30, Opaque(ViewColor.Panel), ViewColor.Text);
+            dock.AddComponent<CollapsiblePanel>().Init(drt, w + 40f, tab, tabLabel, "►", "◄");
             return (hud, dockT);
         }
 

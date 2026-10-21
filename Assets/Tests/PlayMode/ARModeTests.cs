@@ -115,6 +115,18 @@ namespace Gridlock.Tests
             yield return null;
             GridlockSceneTests.Capture("ar_01_deadlock_miniature");
 
+            // On a phone the side panel folds away to show the whole lot.
+            var dock = UnityEngine.Object.FindFirstObjectByType<Gridlock.UI.CollapsiblePanel>();
+            Assert.IsNotNull(dock, "the side panel can fold away");
+            var dockRect = (RectTransform)dock.transform;
+            float before = dockRect.anchoredPosition.x;
+            dock.SetFolded(true);
+            yield return new WaitForSecondsRealtime(0.4f);
+            Assert.Greater(dockRect.anchoredPosition.x, before + 400f, "folded off the right edge");
+            GridlockSceneTests.Capture("ar_01b_panel_folded");
+            dock.SetFolded(false);
+            yield return new WaitForSecondsRealtime(0.4f);
+
             // Pinch and twist keep the miniature on the same spot.
             stage.Rescale(25f);
             stage.Rotate(30f);
@@ -246,14 +258,16 @@ namespace Gridlock.Tests
 
             var srtf = GameObject.Find("SRTF").GetComponent("AlgorithmWorkstation");
             Assert.IsTrue(stage.TapAt(ScreenPoint(Centre(srtf))), "a tap on the SRTF desk");
+            Assert.IsTrue(GameObject.Find("Tap Pulse/Ring").GetComponent<Renderer>().enabled, "a ring flashes under the tapped desk");
             yield return null;
             var simType = AppDomain.CurrentDomain.GetAssemblies().Select(x => x.GetType("SimulationController")).First(t => t != null);
             var sim = simType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!.GetValue(null);
             Assert.IsNotNull(sim, "the lab's simulation");
             var algorithm = sim.GetType().GetProperty("CurrentAlgorithm")!.GetValue(sim);
             StringAssert.Contains("SRTF", algorithm.GetType().GetProperty("Name")!.GetValue(algorithm).ToString());
+            var card = GameObject.Find("AR Guidance/Info Card").GetComponent<ARInfoCard>();
+            StringAssert.Contains("SRTF", card.Title, "the info card names the tapped desk's algorithm");
 
-            Assert.IsTrue(GameObject.Find("Tap Pulse/Ring").GetComponent<Renderer>().enabled, "a ring flashes under the tapped desk");
 
             // Hold to focus: the model grows 2.5× around the held spot, which moves onto the anchor; holding again shows it all.
             var origin = stage.GetComponent<Unity.XR.CoreUtils.XROrigin>().transform;
@@ -302,6 +316,9 @@ namespace Gridlock.Tests
             yield return null;
             Assert.AreEqual(box, adapter.GetType().GetProperty("Carried")!.GetValue(adapter), "the box is picked up");
             Assert.Greater(box.transform.position.y, lying.y + 0.3f, "it floats above its spot");
+            var infoCard = GameObject.Find("AR Guidance/Info Card").GetComponent<ARInfoCard>();
+            Assert.AreEqual($"Page {first}", infoCard.Title, "the info card names the page");
+            StringAssert.Contains("Picked up", infoCard.Body, "and tells its new state");
             yield return new WaitForSeconds(0.3f);
             GridlockSceneTests.Capture("ar_memory_02_box_picked");
 

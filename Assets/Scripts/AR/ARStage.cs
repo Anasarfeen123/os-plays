@@ -49,6 +49,7 @@ namespace Gridlock.AR
         [Tooltip("The model's own help line, used when the scene's HUD has none.")]
         [SerializeField] TMP_Text helpLine;
         [SerializeField] ARTapPulse tapPulse;
+        [SerializeField] ARInfoCard infoCard;
         [Tooltip("HUD parts that only make sense once the model is down (the hub's keypad).")]
         [SerializeField] GameObject[] hideUntilPlaced = new GameObject[0];
 
@@ -57,6 +58,13 @@ namespace Gridlock.AR
         /// collider and returns true if it used the tap.
         /// </summary>
         public static readonly List<Func<Collider, bool>> TapHandlers = new List<Func<Collider, bool>>();
+
+        /// <summary>
+        /// What a tapped thing is and how it stands, for the info card: each provider returns null for colliders that are
+        /// not its own (the scenarios register theirs).
+        /// </summary>
+        public static readonly List<Func<Collider, (string title, string body)?>> InfoProviders =
+            new List<Func<Collider, (string title, string body)?>>();
 
         /// <summary>The current scene's stage while AR runs (null otherwise).</summary>
         public static ARStage Current { get; private set; }
@@ -123,6 +131,22 @@ namespace Gridlock.AR
         }
 
         public void SetHideUntilPlaced(params GameObject[] parts) => hideUntilPlaced = parts;
+
+        public void SetInfoCard(ARInfoCard card) => infoCard = card;
+
+        /// <summary>The info card for the tapped thing, if any provider knows it; otherwise the card goes away.</summary>
+        void ShowInfo(Collider col)
+        {
+            if (infoCard == null) return;
+            foreach (var provider in InfoProviders)
+            {
+                var info = provider(col);
+                if (!info.HasValue) continue;
+                infoCard.Show(info.Value.title, info.Value.body);
+                return;
+            }
+            infoCard.Hide();
+        }
 
         void ShowPlacedOnly(bool show)
         {
@@ -475,7 +499,9 @@ namespace Gridlock.AR
                 // Trigger volumes (a headset's drop zones) are invisible: only ones made for AR taps take them.
                 if (col.isTrigger && col.GetComponentInParent<IARTappable>() == null) continue;
                 if (!Tappable(col)) continue;
-                if (Use(col))
+                bool used = Use(col);
+                ShowInfo(col); // after the tap acted: the card tells the new state (a box just picked up)
+                if (used)
                 {
                     ARHaptics.Tick();
                     if (tapPulse != null) tapPulse.Play(col.bounds);

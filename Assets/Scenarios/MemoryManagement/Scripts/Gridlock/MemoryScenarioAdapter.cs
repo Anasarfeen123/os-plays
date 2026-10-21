@@ -56,6 +56,7 @@ public class MemoryScenarioAdapter : MonoBehaviour
         // AR has no first-person view to carry in front of: a picked box hangs under its own carrier above its spot, so a
         // box the manager takes back (evicted, reset) still leaves the carrier and is no longer "in hand".
         if (ar) carryAnchor = new GameObject("AR Carry").transform;
+        if (ar) Gridlock.AR.ARStage.InfoProviders.Add(Describe);
         if (xr)
         {
             tableSpots = new Vector3[boxes.Length];
@@ -74,6 +75,32 @@ public class MemoryScenarioAdapter : MonoBehaviour
             if (boxes[i] != null) boxes[i].AddComponent<MemoryBoxTarget>().Init(this, pages[i]);
         for (int i = 0; i < frames.Length; i++)
             if (frames[i] != null) frames[i].gameObject.AddComponent<MemoryFrameTarget>().Init(this, frameIndices[i]);
+    }
+
+    void OnDestroy() => Gridlock.AR.ARStage.InfoProviders.Remove(Describe);
+
+    /// <summary>The info card for a tapped page box or frame pallet (phone AR).</summary>
+    (string title, string body)? Describe(Collider hit)
+    {
+        string next = manager.NextPage > 0 ? $"The program needs page {manager.NextPage} next." : "The reference string is done.";
+        var box = hit.GetComponentInParent<MemoryBoxTarget>();
+        if (box != null)
+        {
+            int page = manager.PageOf(box.gameObject);
+            int frame = manager.FrameOf(box.gameObject);
+            string where = frame >= 0 ? $"In memory, in frame {frame + 1}." : box.gameObject == carried ? "Picked up: tap a frame's pallet." : "On disk (the table): not in memory.";
+            return ($"Page {page}", $"{where}\n{next}");
+        }
+        var pallet = hit.GetComponentInParent<MemoryFrameTarget>();
+        if (pallet != null)
+        {
+            int index = System.Array.IndexOf(frames, pallet.transform);
+            int frame = index >= 0 ? frameIndices[index] : 0;
+            var resident = manager.ResidentIn(frame);
+            string holds = resident != null ? $"Holds page {manager.PageOf(resident)}." : "Empty.";
+            return ($"Frame {frame + 1}", $"{holds}  Faults so far: {manager.Faults}, hits: {manager.Hits}.\n{next}");
+        }
+        return null;
     }
 
     void Update()

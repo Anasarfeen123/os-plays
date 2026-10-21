@@ -222,6 +222,12 @@ public class MemoryPlacementManager : MonoBehaviour
     /// <summary>The frame a resident box is in (0-based), or -1.</summary>
     public int FrameOf(GameObject box) => System.Array.IndexOf(residentBoxes, box);
 
+    /// <summary>GRIDLOCK: the box (page) in a frame, or null.</summary>
+    public GameObject ResidentIn(int frame) => frame >= 0 && frame < residentBoxes.Length ? residentBoxes[frame] : null;
+
+    /// <summary>GRIDLOCK: the page number a box stands for.</summary>
+    public int PageOf(GameObject box) => GetPageNumber(box);
+
     /// <summary>A box that is not in memory goes back to its shelf (dropped somewhere else, or on the wrong frame).</summary>
     public void ReturnToStart(GameObject box)
     {

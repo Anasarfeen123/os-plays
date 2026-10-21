@@ -107,17 +107,16 @@ namespace Gridlock.Editor
             var camData = cam.GetUniversalAdditionalCameraData();
             camData.renderPostProcessing = true;
             camData.antialiasing = AntialiasingMode.None;
-            // Real things in front of the model hide it (ARCore depth, on phones that have it). ARShaderOcclusion turns off AR
+            // Real things in front of the model hide it (ARCore depth, on phones that have it). ARDepthOcclusion turns off AR
             // Foundation's own background occlusion, which let the noisy depth of the table or floor swallow the model's
-            // base; ARDepthOcclusion writes the depth with a margin instead.
+            // base, and writes the depth with a margin instead.
             var occlusion = camGo.AddComponent<AROcclusionManager>();
             occlusion.requestedEnvironmentDepthMode = EnvironmentDepthMode.Medium;
             occlusion.requestedOcclusionPreferenceMode = OcclusionPreferenceMode.PreferEnvironmentOcclusion;
             occlusion.environmentDepthTemporalSmoothingRequested = true;
-            camGo.AddComponent<ARShaderOcclusion>();
             var depthMat = SaveMat("ARDepthOcclusion", new Material(Shader.Find("OSPlays/ARDepthOcclusion")
                                                                     ?? throw new InvalidOperationException("Missing shader OSPlays/ARDepthOcclusion")));
-            camGo.AddComponent<ARDepthOcclusion>().Init(camGo.GetComponent<ARCameraManager>(), depthMat);
+            camGo.AddComponent<ARDepthOcclusion>().Init(camGo.GetComponent<ARCameraManager>(), occlusion, depthMat);
             var pose = camGo.AddComponent<TrackedPoseDriver>();
             pose.positionInput = new InputActionProperty(new InputAction("Position", binding: "<HandheldARInputDevice>/devicePosition"));
             pose.rotationInput = new InputActionProperty(new InputAction("Rotation", binding: "<HandheldARInputDevice>/deviceRotation"));
@@ -162,6 +161,7 @@ namespace Gridlock.Editor
             originGo.AddComponent<ARStage>().Init(origin, raycasts, planes, cam, pivot, reticle, plate.gameObject, guidance.Root, guidance.Hint, guidance.Scale,
                                                   guidance.Move, guidance.Planes, guidance.PlanesLabel, guidance.Help, settings);
             originGo.GetComponent<ARStage>().SetTapPulse(tapPulse);
+            originGo.GetComponent<ARStage>().SetInfoCard(guidance.Info);
 
             root.SetActive(false);
             mode.SetARRig(root);
@@ -331,6 +331,7 @@ namespace Gridlock.Editor
         struct ARGuidanceUI
         {
             public GameObject Root;
+            public ARInfoCard Info;
             public TMP_Text Hint, Scale, PlanesLabel, Help;
             public UnityEngine.UI.Button Move, Planes;
         }
@@ -398,6 +399,20 @@ namespace Gridlock.Editor
             phone.AddComponent<ARScanAnimation>();
             scan.gameObject.SetActive(false);
 
+            // What a tap hit and how it stands, bottom left above the help line.
+            var info = Anchored("Info Card", root.transform, new Vector2(0f, 0f), new Vector2(24f + 290f, 96f + 85f), new Vector2(580f, 170f));
+            var infoPanel = Bordered("Panel", info, 0, 0, 580, 170, Opaque(ViewColor.Panel), Amber);
+            var infoTitle = UIText("Title", infoPanel.transform, 22, 12, 536, 44, "", 30, Amber, TextAlignmentOptions.Left, FontStyles.Bold);
+            infoTitle.enableAutoSizing = true;
+            infoTitle.fontSizeMin = 20f;
+            infoTitle.fontSizeMax = 30f;
+            var infoBody = UIText("Body", infoPanel.transform, 22, 58, 536, 100, "", 22, ViewColor.Text, TextAlignmentOptions.TopLeft);
+            infoBody.enableAutoSizing = true;
+            infoBody.fontSizeMin = 15f;
+            infoBody.fontSizeMax = 22f;
+            foreach (var g in infoPanel.GetComponentsInChildren<UnityEngine.UI.Graphic>(true)) g.raycastTarget = false;
+            info.gameObject.AddComponent<ARInfoCard>().Init(info.gameObject.AddComponent<CanvasGroup>(), infoTitle, infoBody);
+
             var helpBar = Anchored("Help Bar", root.transform, new Vector2(0.5f, 0f), new Vector2(0f, 46f), new Vector2(1100f, 56f));
             var bar = Panel("Background", helpBar, 0, 0, 1100, 56, new Color(0.04f, 0.06f, 0.1f, 0.82f));
             bar.GetComponent<UnityEngine.UI.Image>().raycastTarget = false;
@@ -407,7 +422,7 @@ namespace Gridlock.Editor
             help.fontSizeMax = 22f;
 
             root.SetActive(false);
-            return new ARGuidanceUI { Root = root, Hint = hint, Scale = scale, Move = move, Planes = planes, PlanesLabel = planesLabel, Help = help };
+            return new ARGuidanceUI { Root = root, Info = info.GetComponent<ARInfoCard>(), Hint = hint, Scale = scale, Move = move, Planes = planes, PlanesLabel = planesLabel, Help = help };
         }
 
         /// <summary>A box of the given size centred at an offset from an anchor point of the parent; children use top-left pixels.</summary>

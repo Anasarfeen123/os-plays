@@ -1,12 +1,16 @@
+using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 
 namespace Gridlock.AR
 {
     /// <summary>
-    /// Real things in front of the tabletop model hide it, but the surface it stands on never does. ARShaderOcclusion on
-    /// the same camera stops AR Foundation's own background occlusion and publishes the depth texture; this draws it
-    /// into the depth buffer with a margin (see OSPlays/ARDepthOcclusion), on a quad just in front of the camera.
+    /// Real things in front of the tabletop model hide it, but the surface it stands on never does. AR Foundation's own
+    /// background occlusion is switched off (the camera background is told that shader occlusion handles it, which is
+    /// what an ARShaderOcclusion component would do; that component throws when the occlusion manager shuts down), and
+    /// the depth texture is drawn into the depth buffer with a margin instead (see OSPlays/ARDepthOcclusion), on a quad
+    /// just in front of the camera.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public class ARDepthOcclusion : MonoBehaviour
@@ -16,6 +20,7 @@ namespace Gridlock.AR
         static readonly int EnvironmentDepth = Shader.PropertyToID("_EnvironmentDepth");
 
         [SerializeField] ARCameraManager cameraManager;
+        [SerializeField] AROcclusionManager occlusionManager;
         [SerializeField] Material material;
 
         Camera view;
@@ -23,10 +28,22 @@ namespace Gridlock.AR
         Renderer quadRenderer;
         bool haveFrame;
 
-        public void Init(ARCameraManager manager, Material occlusionMaterial)
+        public void Init(ARCameraManager manager, AROcclusionManager occlusion, Material occlusionMaterial)
         {
             cameraManager = manager;
+            occlusionManager = occlusion;
             material = occlusionMaterial;
+        }
+
+        /// <summary>
+        /// Tell this camera's ARCameraBackground that occlusion is done by shaders, so it stops writing the unbiased depth.
+        /// (ARShaderOcclusion raises the same internal event when it is enabled.)
+        /// </summary>
+        void Start()
+        {
+            var field = typeof(ARShaderOcclusion).GetField("shaderOcclusionComponentEnabled", BindingFlags.NonPublic | BindingFlags.Static);
+            if (field?.GetValue(null) is Action<GameObject> raise) raise(gameObject);
+            else if (field == null) Debug.LogWarning("[GRIDLOCK] AR occlusion: could not switch off the background's own occlusion");
         }
 
         void Awake()
@@ -65,8 +82,11 @@ namespace Gridlock.AR
         void LateUpdate()
         {
             // Only once the phone actually has depth (not every ARCore phone does).
-            quadRenderer.enabled = haveFrame && Shader.GetGlobalTexture(EnvironmentDepth) != null;
+            Texture depth = null;
+            bool hasDepth = occlusionManager != null && occlusionManager.TryGetEnvironmentDepthTexture(out depth) && depth != null;
+            quadRenderer.enabled = haveFrame && hasDepth;
             if (!quadRenderer.enabled) return;
+            material.SetTexture(EnvironmentDepth, depth);
 
             // The rig is scaled to the model's size: real metres to world units.
             material.SetFloat(Scale, transform.localToWorldMatrix.GetColumn(2).magnitude);
