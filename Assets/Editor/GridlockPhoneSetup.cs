@@ -68,6 +68,7 @@ namespace Gridlock.Editor
                 PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24; // ARCore
             PlayerSettings.Android.optimizedFramePacing = true;
             PlayerSettings.Android.renderOutsideSafeArea = false; // keep the HUD clear of camera cut-outs
+            PlayerSettings.Android.startInFullscreen = true; // no status bar over the camera view
             AssetDatabase.SaveAssets();
             Debug.Log("[GRIDLOCK] Configured for Android phones (ARCore AR in every scene).");
         }

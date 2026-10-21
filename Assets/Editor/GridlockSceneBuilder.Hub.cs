@@ -109,6 +109,8 @@ namespace Gridlock.Editor
                 cutawayBand = 1f,
                 outdoorLight = false,
             }, new Rect(RoomMinX - 0.4f, RoomMinZ - 0.4f, RoomMaxX - RoomMinX + 0.8f, RoomMaxZ - RoomMinZ + 0.8f), 0f, "CONTROL ROOM", Cyan);
+            var keypad = desktop.Find("Desktop HUD/TouchKeypad");
+            if (keypad != null) Object.FindObjectsByType<ARStage>(FindObjectsInactive.Include, FindObjectsSortMode.None).First().SetHideUntilPlaced(keypad.gameObject);
             var roamer = BuildDesktopRoamer(desktop, desktopInput);
             seat.Init(mode, origin, roamer, room.Find("Chair/StandPoint"));
             BuildAudioSystems("music_hub");

@@ -49,6 +49,8 @@ namespace Gridlock.AR
         [Tooltip("The model's own help line, used when the scene's HUD has none.")]
         [SerializeField] TMP_Text helpLine;
         [SerializeField] ARTapPulse tapPulse;
+        [Tooltip("HUD parts that only make sense once the model is down (the hub's keypad).")]
+        [SerializeField] GameObject[] hideUntilPlaced = new GameObject[0];
 
         /// <summary>
         /// Taps on things outside GRIDLOCK's assembly (the imported scenarios' [E] objects): each handler gets the hit
@@ -120,6 +122,14 @@ namespace Gridlock.AR
             settings = diorama;
         }
 
+        public void SetHideUntilPlaced(params GameObject[] parts) => hideUntilPlaced = parts;
+
+        void ShowPlacedOnly(bool show)
+        {
+            foreach (var part in hideUntilPlaced)
+                if (part != null) part.SetActive(show);
+        }
+
         /// <summary>The ring that flashes under a tapped thing.</summary>
         public void SetTapPulse(ARTapPulse pulse) => tapPulse = pulse;
 
@@ -156,6 +166,7 @@ namespace Gridlock.AR
             reticle.gameObject.SetActive(false);
             moveButton.gameObject.SetActive(false);
             planesButton.gameObject.SetActive(false); // the grid shows while scanning; the toggle is for once placed
+            ShowPlacedOnly(false);
             var scan = ui.transform.Find("Scan");
             scanPrompt = scan != null ? scan.gameObject : null;
             StartCoroutine(CheckSupport());
@@ -294,6 +305,7 @@ namespace Gridlock.AR
             if (scanPrompt != null) scanPrompt.SetActive(false);
             moveButton.gameObject.SetActive(true);
             planesButton.gameObject.SetActive(true);
+            ShowPlacedOnly(true);
             SetPlanesVisible(false);
             placedAt = Time.unscaledTime;
             focused = false;
@@ -327,6 +339,7 @@ namespace Gridlock.AR
             stage = Stage.Scanning;
             moveButton.gameObject.SetActive(false);
             planesButton.gameObject.SetActive(false);
+            ShowPlacedOnly(false);
             SetPlanesVisible(true);
         }
 

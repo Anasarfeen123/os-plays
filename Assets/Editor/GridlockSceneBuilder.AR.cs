@@ -107,12 +107,17 @@ namespace Gridlock.Editor
             var camData = cam.GetUniversalAdditionalCameraData();
             camData.renderPostProcessing = true;
             camData.antialiasing = AntialiasingMode.None;
-            // Real things in front of the model hide it (ARCore depth, on phones that have it; ARCameraBackground scales
-            // the real depth by the rig's scale).
+            // Real things in front of the model hide it (ARCore depth, on phones that have it). ARShaderOcclusion turns off AR
+            // Foundation's own background occlusion, which let the noisy depth of the table or floor swallow the model's
+            // base; ARDepthOcclusion writes the depth with a margin instead.
             var occlusion = camGo.AddComponent<AROcclusionManager>();
             occlusion.requestedEnvironmentDepthMode = EnvironmentDepthMode.Medium;
             occlusion.requestedOcclusionPreferenceMode = OcclusionPreferenceMode.PreferEnvironmentOcclusion;
             occlusion.environmentDepthTemporalSmoothingRequested = true;
+            camGo.AddComponent<ARShaderOcclusion>();
+            var depthMat = SaveMat("ARDepthOcclusion", new Material(Shader.Find("OSPlays/ARDepthOcclusion")
+                                                                    ?? throw new InvalidOperationException("Missing shader OSPlays/ARDepthOcclusion")));
+            camGo.AddComponent<ARDepthOcclusion>().Init(camGo.GetComponent<ARCameraManager>(), depthMat);
             var pose = camGo.AddComponent<TrackedPoseDriver>();
             pose.positionInput = new InputActionProperty(new InputAction("Position", binding: "<HandheldARInputDevice>/devicePosition"));
             pose.rotationInput = new InputActionProperty(new InputAction("Rotation", binding: "<HandheldARInputDevice>/deviceRotation"));

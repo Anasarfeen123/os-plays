@@ -38,7 +38,7 @@ if [[ -z "$DRY_RUN" ]]; then
 fi
 
 mkdir -p "$OUT" "$LOGS"
-SINK=$(pactl load-module module-null-sink sink_name=osplays_release 2>/dev/null || true)
+SINK=$(pactl load-module module-null-sink sink_name=osplays_release_$$ 2>/dev/null || true)
 cleanup() { [[ -n "$SINK" ]] && pactl unload-module "$SINK" 2>/dev/null || true; }
 trap cleanup EXIT
 
@@ -47,7 +47,7 @@ build() {
     local target=$1 log="$LOGS/$1.log"
     echo "release: building the $target APK (about 5 minutes)…"
     rm -f "$log"
-    OSPLAYS_VERSION="$VERSION" PULSE_SINK=osplays_release "$UNITY" -batchmode -nographics -projectPath "$ROOT" \
+    OSPLAYS_VERSION="$VERSION" PULSE_SINK=osplays_release_$$ "$UNITY" -batchmode -nographics -projectPath "$ROOT" \
         -buildTarget Android -executeMethod "Gridlock.Editor.Gridlock${target}Setup.ConfigureAndBuild" -logFile "$log" &
     local pid=$!
     while kill -0 $pid 2>/dev/null; do
