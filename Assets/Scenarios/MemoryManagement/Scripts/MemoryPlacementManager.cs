@@ -79,6 +79,17 @@ public class MemoryPlacementManager : MonoBehaviour
         Show("Select an algorithm to begin.", FeedbackType.Normal);
     }
 
+    // GRIDLOCK: read by the guided tour.
+    public int ReferenceIndex => referenceIndex;
+    public int Faults => faults;
+    public int Hits => hits;
+    public int NextPage => CurrentPage();
+    public int FrameCount => frameSlots.Length;
+    public int EmptyFrame => FindEmptyFrame();
+    public bool Busy => processing;
+    public Transform FrameSlot(int frame) => frameSlots[frame];
+    public GameObject BoxFor(int page) => System.Array.Find(pageBoxes, p => p.pageNumber == page)?.box;
+
     public void SelectFIFO() => SelectAlgorithm(Algorithm.FIFO);
     public void SelectLRU() => SelectAlgorithm(Algorithm.LRU);
     public void SelectOptimal() => SelectAlgorithm(Algorithm.Optimal);

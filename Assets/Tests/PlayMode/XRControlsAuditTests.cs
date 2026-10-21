@@ -41,6 +41,8 @@ namespace Gridlock.Tests
             [Values("GridlockHub", "GridlockParkingLot", "GridlockBanker", "GridlockCPUScheduling", "GridlockMemory")] string scene)
         {
             Gridlock.Guide.GuideTour.Seen = Gridlock.Guide.BankerTour.Seen = true;
+            Gridlock.Guide.NarratedTour.SetSeen("cpu", true); // the scenario tours
+            Gridlock.Guide.NarratedTour.SetSeen("memory", true);
             XRModeController.ForceSimulatorInEditor = true;
             SceneManager.LoadScene(scene);
             yield return null;

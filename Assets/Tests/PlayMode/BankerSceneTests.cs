@@ -19,6 +19,8 @@ namespace Gridlock.Tests
         {
             LogAssert.ignoreFailingMessages = true;
             Gridlock.Guide.BankerTour.Seen = true; // these tests play the levels directly
+            Gridlock.Guide.NarratedTour.SetSeen("cpu", true); // the scenario tours
+            Gridlock.Guide.NarratedTour.SetSeen("memory", true);
         }
 
         [TearDown]

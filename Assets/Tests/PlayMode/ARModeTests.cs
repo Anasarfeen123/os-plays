@@ -31,6 +31,8 @@ namespace Gridlock.Tests
             LogAssert.ignoreFailingMessages = true;
             XRModeController.ForceARInEditor = true;
             GameSettings.AutoTours = true;
+            Gridlock.Guide.NarratedTour.SetSeen("cpu", true); // the scenario tours
+            Gridlock.Guide.NarratedTour.SetSeen("memory", true);
             ARStage.ForgetPlacement();
         }
 
@@ -42,6 +44,8 @@ namespace Gridlock.Tests
             ScenePlacement.Ready = true;
             Time.timeScale = 1f;
             GuideTour.Seen = BankerTour.Seen = true;
+            Gridlock.Guide.NarratedTour.SetSeen("cpu", true); // the scenario tours
+            Gridlock.Guide.NarratedTour.SetSeen("memory", true);
         }
 
         static IEnumerator WaitFor(Func<bool> condition, float timeoutSeconds, string what)

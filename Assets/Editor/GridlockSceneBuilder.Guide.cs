@@ -53,6 +53,14 @@ namespace Gridlock.Editor
         // =====================================================================================================
 
         static readonly string[] DeadlockTourIds = { "welcome", "environment", "allocate", "wait", "circle", "detect", "tow", "tow_auto", "unwind", "outro" };
+        static readonly string[] CpuTourIds =
+        {
+            "cpu_welcome", "cpu_processes", "cpu_queue", "cpu_core", "cpu_desks", "cpu_turn", "cpu_hint", "cpu_gantt", "cpu_result", "cpu_outro",
+        };
+        static readonly string[] MemoryTourIds =
+        {
+            "mem_welcome", "mem_frames", "mem_pages", "mem_algorithm", "mem_turn", "mem_hint", "mem_fault", "mem_victim", "mem_outro",
+        };
         static readonly string[] BankerTourIds =
         {
             "banker_welcome", "banker_fleets", "banker_alloc", "banker_need", "banker_request", "banker_safety",
@@ -75,10 +83,27 @@ namespace Gridlock.Editor
         /// Adds tour <typeparamref name="T"/> with its two guide screens (floating for XR, docked in the desktop HUD) and the
         /// marker. Returns the tour so the caller can wire its scene.
         /// </summary>
-        static T BuildTour<T>(string[] ids, XRModeController mode, Transform desktopHud, TourEnd end) where T : NarratedTour
+        static T BuildTour<T>(string[] ids, XRModeController mode, Transform desktopHud, TourEnd end) where T : NarratedTour =>
+            (T)BuildTour(typeof(T), ids, mode, desktopHud, end);
+
+        /// <summary>A tour whose class lives with an imported scenario (outside this assembly), by type name.</summary>
+        static NarratedTour BuildScenarioTour(string typeName, string[] ids, XRModeController mode, Transform desktopHud, TourEnd end,
+                                              params (string field, Object value)[] fields)
+        {
+            var type = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(typeName)).FirstOrDefault(t => t != null)
+                       ?? throw new InvalidOperationException($"Scenario tour {typeName} is missing (Assets/Scenarios)");
+            var tour = BuildTour(type, ids, mode, desktopHud, end);
+            var so = new SerializedObject(tour);
+            foreach (var (field, value) in fields)
+                (so.FindProperty(field) ?? throw new InvalidOperationException($"{typeName} has no field {field}")).objectReferenceValue = value;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return tour;
+        }
+
+        static NarratedTour BuildTour(Type tourType, string[] ids, XRModeController mode, Transform desktopHud, TourEnd end)
         {
             var root = new GameObject("Guided Tour");
-            var tour = root.AddComponent<T>();
+            var tour = (NarratedTour)root.AddComponent(tourType);
 
             var xrCanvas = WorldCanvas("GuideScreen (XR)", root.transform, new Vector2(GuideW, GuideH), 0.001f); // 1.0 × 0.47 m
             xrCanvas.AddComponent<FloatingFollow>();

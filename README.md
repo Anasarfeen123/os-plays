@@ -147,8 +147,8 @@ menu with that scene's details.
 
 ### Phone (AR)
 
-Everywhere: **pinch** to resize the model, **twist** two fingers to rotate it, **drag** one finger to slide it, **MOVE**
-to place it somewhere else. Walk around the table to look from another side; the walls facing you open up.
+Everywhere: **pinch** to resize the model, **twist** two fingers to rotate it, **drag** one finger to slide it, **hold**
+a spot to zoom in on it (hold again to see it all), **MOVE** to place it somewhere else. Walk around the table to look from another side; the walls facing you open up.
 
 | Where | Controls |
 |---|---|

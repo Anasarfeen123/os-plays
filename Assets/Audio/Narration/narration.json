@@ -106,6 +106,102 @@
             "id": "banker_outro",
             "title": "What comes next",
             "text": "The next levels teach the other rules: asking for more than the declared maximum, not enough free bays, and requests that fit but are unsafe. Then try challenge mode against the clock. Press Next when you are ready."
+        },
+        {
+            "id": "cpu_welcome",
+            "title": "Welcome to the CPU lab",
+            "text": "Welcome to the CPU scheduling lab. A computer has only a few processor cores, but many programs that want one. Here there is a single core, and the scheduler decides who gets it next."
+        },
+        {
+            "id": "cpu_processes",
+            "title": "Processes",
+            "text": "Each coloured block is a process. It needs the CPU for a number of ticks, called its burst time, and it arrives at a certain moment."
+        },
+        {
+            "id": "cpu_queue",
+            "title": "The ready queue",
+            "text": "Processes that have arrived and want the CPU wait here, in the ready queue."
+        },
+        {
+            "id": "cpu_core",
+            "title": "The CPU core",
+            "text": "The core runs one process at a time. When that process finishes, or the scheduler takes the CPU away, the next one moves in."
+        },
+        {
+            "id": "cpu_desks",
+            "title": "Scheduling algorithms",
+            "text": "Each desk is a scheduling algorithm: first come, first served; shortest remaining time first; priority; and round robin. Use a desk to choose one. First come, first served is selected now.",
+            "say": "Each desk is a scheduling algorithm: first come, first served; shortest remaining time first; priority; and round robin. Use a desk to choose one. First come, first served, is selected now."
+        },
+        {
+            "id": "cpu_turn",
+            "title": "Your turn",
+            "text": "Your turn. Start the simulation: press RUN on the console, or the RUN button."
+        },
+        {
+            "id": "cpu_hint",
+            "title": "Hint",
+            "text": "Press RUN to let the scheduler start handing out the CPU."
+        },
+        {
+            "id": "cpu_gantt",
+            "title": "The Gantt chart",
+            "text": "Watch the timeline on the wall fill in. This is the Gantt chart: which process used the CPU, and when."
+        },
+        {
+            "id": "cpu_result",
+            "title": "Waiting time",
+            "text": "Everyone is done. A process's waiting time is the time it spent ready but not running. With first come, first served, short jobs stuck behind a long one wait a long time."
+        },
+        {
+            "id": "cpu_outro",
+            "title": "Compare them",
+            "text": "Now choose another desk, run it again, and compare the waiting times. Shortest remaining time first usually waits the least, and round robin is the fairest. When you are ready, test yourself at the challenge wall."
+        },
+        {
+            "id": "mem_welcome",
+            "title": "Welcome to the warehouse",
+            "text": "Welcome to the memory warehouse. A program is split into pages, but physical memory only has room for a few of them at a time."
+        },
+        {
+            "id": "mem_frames",
+            "title": "Frames",
+            "text": "The three pallets on the rack are the frames of physical memory. Each frame holds exactly one page."
+        },
+        {
+            "id": "mem_pages",
+            "title": "Pages",
+            "text": "The numbered boxes are the program's pages. The program asks for them in a fixed order, called the reference string, shown on the screen."
+        },
+        {
+            "id": "mem_algorithm",
+            "title": "Replacement policy",
+            "text": "When every frame is full and a new page is needed, one page must leave. The policy decides which. Let's start with FIFO: first in, first out."
+        },
+        {
+            "id": "mem_turn",
+            "title": "Your turn",
+            "text": "Your turn. Load the page the screen asks for: pick up its box, then put it on an empty pallet."
+        },
+        {
+            "id": "mem_hint",
+            "title": "Hint",
+            "text": "Look at the screen for the next page number. Pick up that box, and place it on any empty pallet."
+        },
+        {
+            "id": "mem_fault",
+            "title": "Page fault",
+            "text": "That was a page fault: the page was not in memory, so it had to be brought in. Keep loading pages in order. Soon all three frames will be full."
+        },
+        {
+            "id": "mem_victim",
+            "title": "Who leaves?",
+            "text": "Memory was full, so FIFO sent away the page that came in first. LRU would evict the page unused the longest, and Optimal the one needed furthest in the future."
+        },
+        {
+            "id": "mem_outro",
+            "title": "Compare the policies",
+            "text": "Finish the string, then try LRU and Optimal on the screen and compare the number of faults. Fewer faults means a faster program."
         }
     ]
 }

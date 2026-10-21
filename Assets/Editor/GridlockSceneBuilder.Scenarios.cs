@@ -91,9 +91,11 @@ namespace Gridlock.Editor
                 outdoorLight = false,
             }, new Rect(-10.25f, -10.25f, 20.5f, 20.5f), 0f, "CPU SCHEDULING LAB", new Color(0.66f, 0.33f, 0.97f), buttons,
                fillLight: 1.3f);
+            var tour = BuildScenarioTour("CpuTour", CpuTourIds, mode, player.transform.Find("GRIDLOCK HUD"),
+                                         new TourEnd("MEMORY ►", MemorySceneName, "EXPLORE"), ("buttons", buttons));
             BuildAudioSystems(null);
             var restart = glue.AddComponent<SceneRestart>();
-            BuildSystemMenu(mode, player.transform, "CPU SCHEDULING", isHome: false, tour: null, restart.Reload, CpuHowTo);
+            BuildSystemMenu(mode, player.transform, "CPU SCHEDULING", isHome: false, tour, restart.Reload, CpuHowTo);
 
             // The arena is assembled at runtime, so the picture is the lab from a high corner.
             var lab = scene.GetRootGameObjects().First(r => r.name == "OS_Lab").GetComponentsInChildren<Transform>(true).First(t => t.name == "Floor")
@@ -208,9 +210,13 @@ namespace Gridlock.Editor
                 cutawayBand = 1f,
                 outdoorLight = false,
             }, new Rect(-0.1f, -0.1f, 16.4f, 11f), 0f, "MEMORY WAREHOUSE", new Color(0.98f, 0.45f, 0.2f));
+            var welcome = Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                              .FirstOrDefault(b => b.GetType().Name == "WelcomeSequenceController");
+            var tour = BuildScenarioTour("MemoryTour", MemoryTourIds, mode, player.transform.Find("GRIDLOCK HUD"),
+                                         new TourEnd("CPU LAB ►", CpuSceneName, "EXPLORE"), ("manager", manager), ("welcome", welcome));
             BuildAudioSystems(null);
             var restart = glue.AddComponent<SceneRestart>();
-            BuildSystemMenu(mode, player.transform, "MEMORY MANAGEMENT", isHome: false, tour: null, restart.Reload, MemoryHowTo);
+            BuildSystemMenu(mode, player.transform, "MEMORY MANAGEMENT", isHome: false, tour, restart.Reload, MemoryHowTo);
 
             RenderThumb(view, MemoryThumbPath);
             WireTeleportTargets();

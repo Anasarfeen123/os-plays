@@ -5,7 +5,7 @@ subtitles on the guide screen and the hub console. A line may add "say" when the
 subtitle (e.g. "P 2" so the voice reads "P two" while the subtitle shows "P2").
 
 Usage (from the project root):
-    python3 Tools/make_narration.py --piper /path/to/piper/piper --model /path/to/en_US-ljspeech-high.onnx
+    python3 Tools/make_narration.py --piper /path/to/piper/piper --model /path/to/en_US-ljspeech-high.onnx [--missing]
 
 Get Piper from https://github.com/rhasspy/piper/releases (piper_linux_x86_64.tar.gz) and the voice from
 https://huggingface.co/rhasspy/piper-voices (en/en_US/ljspeech/high). LJ Speech is public domain.
@@ -47,12 +47,16 @@ def main():
     ap.add_argument("--piper", required=True)
     ap.add_argument("--model", required=True)
     ap.add_argument("--length-scale", default="0.95", help="below 1 speaks faster")
+    ap.add_argument("--missing", action="store_true",
+                    help="only lines without a WAV yet (Piper's voice varies a little from run to run)")
     args = ap.parse_args()
 
     lines = json.loads((FOLDER / "narration.json").read_text())["lines"]
     total = 0.0
     for line in lines:
         out = FOLDER / f"{line['id']}.wav"
+        if args.missing and out.exists():
+            continue
         subprocess.run([args.piper, "--model", args.model, "--length_scale", args.length_scale,
                         "--sentence_silence", "0.25", "--output_file", str(out)],
                        input=line.get("say", line["text"]).encode(), check=True, capture_output=True)

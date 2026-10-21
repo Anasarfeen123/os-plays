@@ -38,6 +38,8 @@ namespace Gridlock.Tests
             if (string.IsNullOrEmpty(Root)) Assert.Ignore("Set GRIDLOCK_CAPTURE_DIR to take the showcase shots.");
             LogAssert.ignoreFailingMessages = true;
             GuideTour.Seen = BankerTour.Seen = true;
+            Gridlock.Guide.NarratedTour.SetSeen("cpu", true); // the scenario tours
+            Gridlock.Guide.NarratedTour.SetSeen("memory", true);
         }
 
         [UnityTearDown]

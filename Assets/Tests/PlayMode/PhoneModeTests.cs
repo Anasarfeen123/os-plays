@@ -24,7 +24,12 @@ namespace Gridlock.Tests
     {
         /// <summary>These tests expect the classic scripted demo, not the first-visit guided tour.</summary>
         [SetUp]
-        public void SkipGuidedTour() => Gridlock.Guide.GuideTour.Seen = Gridlock.Guide.BankerTour.Seen = true;
+        public void SkipGuidedTour()
+        {
+            Gridlock.Guide.GuideTour.Seen = Gridlock.Guide.BankerTour.Seen = true;
+            Gridlock.Guide.NarratedTour.SetSeen("cpu", true);
+            Gridlock.Guide.NarratedTour.SetSeen("memory", true);
+        }
 
         Touchscreen screen;
 

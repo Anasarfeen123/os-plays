@@ -33,6 +33,8 @@ namespace Gridlock.Tests
             Time.timeScale = 1f;
             AudioListener.pause = false;
             GuideTour.Seen = BankerTour.Seen = true;
+            Gridlock.Guide.NarratedTour.SetSeen("cpu", true); // the scenario tours
+            Gridlock.Guide.NarratedTour.SetSeen("memory", true);
 
             // The XR Interaction Simulator outlives scene loads and keeps simulated hand/controller devices alive, which
             // would leak into later tests (e.g. the XR Hands package tests count hand subsystems). Remove it entirely.

@@ -28,6 +28,14 @@ public class WelcomeSequenceController : MonoBehaviour
         StartCoroutine(PlayTutorialSequence());
     }
 
+    /// <summary>GRIDLOCK: the narrated tour explains instead: straight to the algorithm screen, without the old voice-over.</summary>
+    public void SkipToAlgorithms()
+    {
+        sequenceStarted = true;
+        if (welcomePanel != null) welcomePanel.SetActive(false);
+        if (algorithmPanel != null) algorithmPanel.SetActive(true);
+    }
+
     private IEnumerator PlayTutorialSequence()
     {
         yield return PlayClip(tutorialAudio);

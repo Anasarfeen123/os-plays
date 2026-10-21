@@ -18,6 +18,13 @@ namespace Gridlock.Tests
     /// </summary>
     public class ScenarioSceneTests
     {
+        [SetUp]
+        public void SkipTours()
+        {
+            Gridlock.Guide.NarratedTour.SetSeen("cpu", true);
+            Gridlock.Guide.NarratedTour.SetSeen("memory", true);
+        }
+
         [UnityTearDown]
         public IEnumerator TearDown()
         {

@@ -272,7 +272,7 @@ bed under the scoreboard, and street trees. Static decor is static-batched for Q
 
 ## 16f. Guided tours (narrated, about 2 minutes each)
 
-For anyone, including people who have never heard of a deadlock. Each scenario has a tour that plays by itself on the
+For anyone, including people who have never heard of a deadlock. Each scenario (Deadlock, Banker, CPU lab, memory warehouse) has a tour that plays by itself on the
 first visit of a session (Settings → Guided tours AUTO/OFF). The **► GUIDED TOUR** pill or Menu → GUIDED TOUR
 replays it. The control room has no narration.
 
@@ -292,6 +292,19 @@ replays it. The control room has no narration.
   4. **your turn:** GRANT or DENY (hint after ~18 s, then the guide grants);
   5. the narrator explains why the answer was right or wrong while the fleets light up in safe order;
   6. what the next levels teach.
+- **CPU lab tour (`CpuTour`, ~90 s plus the run).**
+  1. processes and burst times, the ready queue, the CPU core;
+  2. the algorithm desks (the tour picks FCFS);
+  3. **your turn:** press RUN (hint after ~15 s, then the guide runs it);
+  4. the Gantt chart fills in at triple speed;
+  5. waiting time, then: try another desk and compare, and the challenge wall.
+- **Memory tour (`MemoryTour`, ~85 s plus the moves).** Replaces the scenario's own welcome voice-over:
+  1. pallets = frames, boxes = pages, the reference string on the screen;
+  2. the replacement policy (the tour picks FIFO);
+  3. **your turn:** load the first page (hint, then the guide loads it);
+  4. page faults while the frames fill (the guide makes each move after a pause if nobody does);
+  5. the first page in is the first out, and what LRU and Optimal would do instead.
+- The scenario tours live with the scenario scripts (Assembly-CSharp) and the builder adds them by type name.
 - **Shared machinery (`NarratedTour`):**
   - the floating **guide screen** shows the step counter, title, subtitles that light up word by word, a progress
     bar, NEXT / SKIP, up to two hands-on buttons, and REPLAY / mode switch at the end;
@@ -342,6 +355,14 @@ the CPU scheduling lab and the memory warehouse. Each one is a tabletop model. Q
 
 - **Dollhouse rooms:** the rooms have no ceiling in AR, and the walls on the sides facing the phone hide as it circles the model, so the player always looks into the room.
 - **Gestures:** pinch resizes, a two-finger twist rotates, and a one-finger drag slides the model across the surface. MOVE picks it up to place again, and SHOW/HIDE GRID toggles the plane grid.
+- **Hold to zoom:** holding a spot zooms the model 2.5× around it (that spot moves onto the anchor); holding again shows
+  the whole model.
+- **Feel:** a light haptic tick when a tap lands on something, a firmer one on placing and zooming (Android haptic
+  feedback, so the phone's touch-vibration setting applies), and a ring flashes under what was tapped.
+- **Lighting and occlusion:** the model's lights follow the real room's brightness and colour (ARCore light
+  estimation, `ARLightEstimation`); the lots' sun also turns to the room's main light and takes half the room's ambient
+  light. Real things in front of the model hide it on phones with ARCore depth (`AROcclusionManager`; AR Foundation
+  scales the real depth by the rig's scale).
 - **Playing:** a tap on the model does what a click (or [E]) does on a monitor:
   - the lot: cars and bays;
   - the control room: its monitor rises above the room as a 4× holo screen; tap a scenario card to focus it, tap it again to enter;
