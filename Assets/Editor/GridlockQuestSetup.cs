@@ -40,6 +40,7 @@ namespace Gridlock.Editor
             "XrPerformanceSettingsFeature", // GPU clock hints (QuestFrameBudget)
             "ARSessionFeature",             // Meta OpenXR: the session behind passthrough (Settings → MIXED REALITY)
             "ARCameraFeature",              // Meta OpenXR: passthrough
+            "OpenXRCompositionLayersFeature", // required once Meta OpenXR brings in the Composition Layers package
         };
 
         [MenuItem("GRIDLOCK/Configure for Meta Quest 2")]
@@ -117,7 +118,7 @@ namespace Gridlock.Editor
             PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
             PlayerSettings.SetManagedStrippingLevel(android, ManagedStrippingLevel.Low);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel29; // the phone build shares this; Quest 2 runs Android 12
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel32; // Meta's camera (passthrough) feature needs 12L; Quest 2 runs it. The phone build sets its own.
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
             PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.GameActivity;
             PlayerSettings.Android.androidTVCompatibility = false;

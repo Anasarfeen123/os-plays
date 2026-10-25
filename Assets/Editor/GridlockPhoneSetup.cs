@@ -64,8 +64,7 @@ namespace Gridlock.Editor
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
             // ARCore's camera feed is most widely supported on GLES3; Vulkan stays as a fallback.
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3, GraphicsDeviceType.Vulkan });
-            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel24)
-                PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24; // ARCore
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel29; // Android 10+ (ARCore needs 24); the Quest build raises it to 32
             PlayerSettings.Android.optimizedFramePacing = true;
             PlayerSettings.Android.renderOutsideSafeArea = false; // keep the HUD clear of camera cut-outs
             PlayerSettings.Android.startInFullscreen = true; // no status bar over the camera view
