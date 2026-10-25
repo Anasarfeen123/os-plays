@@ -19,7 +19,19 @@ namespace Gridlock.Guide
 
         bool placed;
         bool moving;
+        bool compact;
         Vector3 baseScale;
+
+        /// <summary>
+        /// Folded to the GUIDED TOUR pill: the panel moves low and to the left, out of the way of the scene (the pill sits
+        /// at the panel's top-left corner).
+        /// </summary>
+        public void SetCompact(bool value)
+        {
+            if (compact == value) return;
+            compact = value;
+            moving = true;
+        }
 
         void Awake() => baseScale = transform.localScale;
 
@@ -38,7 +50,9 @@ namespace Gridlock.Guide
             if (forward.sqrMagnitude < 1e-4f) forward = Vector3.ProjectOnPlane(cam.transform.up, Vector3.up);
             forward.Normalize();
             var right = Vector3.Cross(Vector3.up, forward);
-            var desired = head + (forward * distance + right * side + Vector3.up * height) * k;
+            var offset = compact ? forward * (distance * 0.85f) + right * (side - 0.15f) + Vector3.up * (height - 0.42f)
+                                 : forward * distance + right * side + Vector3.up * height;
+            var desired = head + offset * k;
 
             if (!placed)
             {

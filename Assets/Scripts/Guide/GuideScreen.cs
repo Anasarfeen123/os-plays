@@ -92,6 +92,7 @@ namespace Gridlock.Guide
         {
             panel.SetActive(true);
             pill.SetActive(false);
+            Compact(false);
             runningButtons.SetActive(true);
             endButtons.SetActive(false);
             stepLabel.text = $"GUIDED TOUR   ·   {number} / {count}";
@@ -152,11 +153,19 @@ namespace Gridlock.Guide
         {
             panel.SetActive(true);
             pill.SetActive(false);
+            Compact(false);
             runningButtons.SetActive(false);
             HideActions();
             endButtons.SetActive(true);
             SetSpoken(1f);
             SetProgress(1f);
+        }
+
+        /// <summary>The headset copy floats low and to the side while it is only the pill.</summary>
+        void Compact(bool value)
+        {
+            var follow = GetComponent<FloatingFollow>();
+            if (follow != null) follow.SetCompact(value);
         }
 
         /// <summary>Out of the way while the quiz uses the spot.</summary>
@@ -170,6 +179,7 @@ namespace Gridlock.Guide
         {
             panel.SetActive(false);
             pill.SetActive(true);
+            Compact(true);
         }
     }
 }

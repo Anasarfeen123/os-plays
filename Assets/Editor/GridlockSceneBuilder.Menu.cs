@@ -411,7 +411,9 @@ namespace Gridlock.Editor
         const string HeadsetHowTo =
             "<b>Headset</b>  left stick walk, right stick turn (push up to teleport). Look at a controller to see its buttons.\n" +
             "<b>Hands</b>  point + pinch to select; pinch the ground and release to teleport; pinch + flick sideways to turn; " +
-            "left palm up for MENU.";
+            "left palm up for MENU.\n" +
+            "<b>Mixed reality</b> (Settings → Display)  your room around a table model: right stick resize, left stick turn, " +
+            "click the right stick to bring it back in front.";
 
         const string DeadlockHowTo =
             "<b><color=#FBBF24>THE IDEA</color></b>\n" +

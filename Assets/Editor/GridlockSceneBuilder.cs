@@ -663,6 +663,7 @@ namespace Gridlock.Editor
             var badge = WorldText("Badge", car.transform, new Vector3(0f, full ? 3.6f : 3.0f, 0f), id, full ? 16f : 11f, color, FontStyles.Bold);
             badge.outlineWidth = 0.22f;
             badge.outlineColor = new Color32(10, 14, 24, 255);
+            badge.GetComponent<Billboard>().ShrinkWithin(10f); // a headset player beside the car: a small letter, not a wall
 
             TextMeshPro status = null;
             if (full)

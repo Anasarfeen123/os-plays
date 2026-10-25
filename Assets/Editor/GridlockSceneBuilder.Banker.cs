@@ -148,6 +148,8 @@ namespace Gridlock.Editor
             var canvas = WorldCanvas("GateCard", null, new Vector2(720, 360), 0.006f);
             canvas.transform.position = new Vector3(LotMinX + 2.4f, 5.6f, AisleZ);
             canvas.AddComponent<Billboard>();
+            // Drawn after the cars' floating letters (both are transparent): a letter never covers GRANT or DENY.
+            canvas.GetComponent<Canvas>().sortingOrder = 10;
             var t = canvas.transform;
 
             Bordered("Background", t, 0, 0, 720, 360, Opaque(ViewColor.Panel), Amber);

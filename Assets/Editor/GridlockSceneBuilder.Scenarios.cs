@@ -158,6 +158,21 @@ namespace Gridlock.Editor
             }
 
             WireScenarioScreens();
+            // The warehouse's screen (welcome, algorithms, quiz) is see-through: it draws after the rack's frame labels behind
+            // it, so "Frame-3" never shows through its text.
+            var screen = scene.GetRootGameObjects().FirstOrDefault(r => r.name == "UI");
+            if (screen != null)
+                foreach (var canvas in screen.GetComponentsInChildren<Canvas>(true))
+                    if (canvas.transform == screen.transform || canvas.overrideSorting) canvas.sortingOrder = Mathf.Max(canvas.sortingOrder, 10);
+            // Its panels were tinted glass: the rack's labels showed through the text. Nearly opaque backgrounds read cleanly.
+            if (screen != null)
+                foreach (var image in screen.GetComponentsInChildren<Image>(true))
+                {
+                    var r = image.rectTransform.rect;
+                    var c = image.color;
+                    if (r.width * r.height < 200f * 120f || c.a < 0.3f || c.a >= 0.94f || image.GetComponent<Selectable>() != null) continue;
+                    image.color = new Color(c.r, c.g, c.b, 0.94f);
+                }
 
             // Desktop and phone: look at (or tap) a box to pick it up, then a pallet to put it there.
             var manager = Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None)
